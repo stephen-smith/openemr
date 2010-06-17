@@ -360,10 +360,10 @@ function gen_x12_837($pid, $encounter, &$log, $encounter_claim=false) {
     "*"  .
     "*"  . $claim->facilityPOS() . "::" . $claim->frequencyTypeCode() .
     "*Y" .
-    "*A" .
+    "*C" .
     "*"  . ($claim->billingFacilityAssignment() ? 'Y' : 'N') .
     "*Y" .
-    "*C" .
+    "*B" .
     "~\n";
 
   ++$edicount;
