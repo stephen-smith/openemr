@@ -122,35 +122,6 @@ function gen_x12_837($pid, $encounter, &$log, $encounter_claim=false) {
 
   $HLBillingPayToProvider = $HLcount++;
 
-  ++$edicount;
-  $out .= "NM1" .       // Loop 2010AA Billing Provider
-    "*85" .
-    "*2" .
-    "*" . $claim->billingFacilityName() .
-    "*" .
-    "*" .
-    "*" .
-    "*";
-  if ($claim->billingFacilityNPI()) {
-    $out .= "*XX*" . $claim->billingFacilityNPI();
-  } else {
-    $log .= "*** Billing facility has no NPI.\n";
-    $out .= "*24*" . $claim->billingFacilityETIN();
-  }
-  $out .= "~\n";
-
-  ++$edicount;
-  $out .= "N3" .
-    "*" . $claim->billingFacilityStreet() .
-    "~\n";
-
-  ++$edicount;
-  $out .= "N4" .
-    "*" . $claim->billingFacilityCity() .
-    "*" . $claim->billingFacilityState() .
-    "*" . $claim->billingFacilityZip() .
-    "~\n";
-
   // Add a REF*EI*<ein> segment if NPI was specified in the NM1 above.
   if ($claim->billingFacilityNPI() && $claim->billingFacilityETIN()) {
     ++$edicount;
