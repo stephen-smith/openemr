@@ -83,7 +83,7 @@ function gen_x12_837($pid, $encounter, &$log, $encounter_claim=false) {
     "*" .
     "*" .
     "*46" .
-    "*" . $claim->billingFacilityETIN() .
+    "*" . $claim->x12gssenderid() .
     "~\n";
 
   ++$edicount;
