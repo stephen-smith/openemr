@@ -327,3 +327,7 @@ UPDATE layout_options SET edit_options = 'CD' WHERE form_id = 'DEM' AND field_id
 UPDATE layout_options SET edit_options = 'ND' WHERE form_id = 'DEM' AND field_id = 'pubpid' AND edit_options = '';
 UPDATE layout_options SET edit_options = 'N'  WHERE form_id = 'DEM' AND field_id = 'sex'    AND edit_options = '';
 
+#IfMissingColumn x12_partners sender_etin
+ALTER TABLE `x12_partners`
+	ADD `sender_etin` VARCHAR(255) DEFAULT NULL;
+#EndIf

@@ -10,6 +10,7 @@ class X12Partner extends ORDataObject{
 
 	var $id;
 	var $name;
+	var $sender_etin;
 	var	$id_number;
 	var $x12_sender_id;   // ISA06
 	var $x12_receiver_id; // ISA08
@@ -79,6 +80,19 @@ class X12Partner extends ORDataObject{
 	
 	function set_id_number($string) {
 			$this->id_number = $string;
+	}
+
+	/*
+	Sender ETIN is used for the 1000B loop, NM1 section, 9th field.
+	It is stored in the database in the "sender_etin" column.
+	The next two functions serve as accessors for it.
+	*/
+	function get_sender_etin() {
+		return $this->sender_etin;
+	}
+
+	function set_sender_etin($string) {
+		$this->sender_etin = $string;
 	}
 	
 	function get_x12_sender_id() {

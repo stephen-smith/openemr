@@ -473,6 +473,10 @@ class Claim {
     return x12clean(trim($this->x12_partner['x12_version']));
   }
 
+  function x12SenderETIN() {
+    return x12clean(trim($this->x12partner['sender_etin']));
+  }
+
   function x12gssenderid() {
     $tmp = $this->x12_partner['x12_sender_id'];
     while (strlen($tmp) < 15) $tmp .= " ";

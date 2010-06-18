@@ -2937,6 +2937,7 @@ CREATE TABLE `x12_partners` (
   `id` int(11) NOT NULL default '0',
   `name` varchar(255) default NULL,
   `id_number` varchar(255) default NULL,
+  `sender_etin` varchar(255) default NULL,
   `x12_sender_id` varchar(255) default NULL,
   `x12_receiver_id` varchar(255) default NULL,
   `x12_version` varchar(255) default NULL,
