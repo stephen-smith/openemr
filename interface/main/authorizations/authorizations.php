@@ -23,7 +23,7 @@ $imauthorized = $_SESSION['userauthorized'] || $see_auth > 2;
 // This authorizes everything for the specified patient.
 if (isset($_GET["mode"]) && $_GET["mode"] == "authorize" && $imauthorized) {
   $retVal = getProviderId($_SESSION['authUser']);	
-  newEvent("authorize", $_SESSION["authUser"], $_SESSION["authProvider"], $_GET["pid"]);
+  newEvent("authorize", $_SESSION["authUser"], $_SESSION["authProvider"], 1, $_GET["pid"]);
   // sqlStatement("update billing set authorized=1, provider_id = '" .
   //   mysql_real_escape_string($retVal[0]['id']) .
   //   "' where pid='" . $_GET["pid"] . "'");
@@ -255,17 +255,9 @@ if ($authorize) {
     if ($GLOBALS['concurrent_layout']) {
       // Clicking the patient name will load both frames for that patient,
       // as demographics.php takes care of loading the bottom frame.
-      // larry :: dbc change here 
-      if( $GLOBALS['dutchpc'] )
-      {
-        echo "<a href='$rootdir/patient_file/summary/demographics_dutch.php?set_pid=$ppid' " .
-          "target='RTop'>";
-      } else
-      {
+
         echo "<a href='$rootdir/patient_file/summary/demographics.php?set_pid=$ppid' " .
           "target='RTop'>";      
-      }
-      // larry :: end of dbc change
         
     } else {
       echo "<a href='$rootdir/patient_file/patient_file.php?set_pid=$ppid' " .

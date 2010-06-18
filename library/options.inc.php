@@ -27,6 +27,44 @@ function get_pharmacies() {
     "ORDER BY name, area_code, prefix, number");
 }
 
+// Function to generate a drop-list.
+//
+function generate_select_list($tag_name, $list_id, $currvalue, $title,
+  $empty_name=' ', $class='', $onchange='')
+{
+  $s = '';
+  $s .= "<select name='$tag_name' id='$tag_name'";
+  if ($class) $s .= " class='$class'";
+  if ($onchange) $s .= " onchange='$onchange'";
+  $s .= " title='$title'>";
+  if ($empty_name) $s .= "<option value=''>" . xl($empty_name) . "</option>";
+  $lres = sqlStatement("SELECT * FROM list_options " .
+    "WHERE list_id = '$list_id' ORDER BY seq, title");
+  $got_selected = FALSE;
+  while ($lrow = sqlFetchArray($lres)) {
+    $s .= "<option value='" . $lrow['option_id'] . "'";
+    if ((strlen($currvalue) == 0 && $lrow['is_default']) ||
+        (strlen($currvalue)  > 0 && $lrow['option_id'] == $currvalue))
+    {
+      $s .= " selected";
+      $got_selected = TRUE;
+    }
+    $s .= ">" . xl_list_label($lrow['title']) . "</option>\n";
+  }
+  if (!$got_selected && strlen($currvalue) > 0) {
+    $currescaped = htmlspecialchars($currvalue, ENT_QUOTES);
+    $s .= "<option value='$currescaped' selected>* $currescaped *</option>";
+    $s .= "</select>";
+    $s .= " <font color='red' title='" .
+      xl('Please choose a valid selection from the list.') . "'>" .
+      xl('Fix this') . "!</font>";
+  }
+  else {
+    $s .= "</select>";
+  }
+  return $s;
+}
+
 function generate_form_field($frow, $currvalue) {
   global $rootdir, $date_init;
 
@@ -61,32 +99,8 @@ function generate_form_field($frow, $currvalue) {
     
   // generic single-selection list
   if ($data_type == 1) {
-    echo "<select name='form_$field_id' id='form_$field_id' title='$description'>";
-    if ($showEmpty) echo "<option value=''>" . xl($empty_title) . "</option>";
-    $lres = sqlStatement("SELECT * FROM list_options " .
-      "WHERE list_id = '$list_id' ORDER BY seq, title");
-    $got_selected = FALSE;
-    while ($lrow = sqlFetchArray($lres)) {
-      echo "<option value='" . $lrow['option_id'] . "'";
-      if ((strlen($currvalue) == 0 && $lrow['is_default']) ||
-          (strlen($currvalue)  > 0 && $lrow['option_id'] == $currvalue))
-      {
-        echo " selected";
-        $got_selected = TRUE;
-      }
-	
-      // Added 5-09 by BM - Translate label if applicable	
-      echo ">" . xl_list_label($lrow['title']) . "</option>\n";
-	
-    }
-    if (!$got_selected && strlen($currvalue) > 0) {
-      echo "<option value='$currescaped' selected>* $currescaped *</option>";
-      echo "</select>";
-      echo " <font color='red' title='" . xl('Please choose a valid selection from the list.') . "'>" . xl('Fix this') . "!</font>";
-    }
-    else {
-      echo "</select>";
-    }
+    echo generate_select_list("form_$field_id", $list_id, $currvalue,
+      $description, $showEmpty ? $empty_title : '');
   }
 
   // simple text field
@@ -194,10 +208,21 @@ function generate_form_field($frow, $currvalue) {
   // Address book, preferring organization name if it exists and is not in
   // parentheses, and excluding local users who are not providers.
   // Supports "referred to" practitioners and facilities.
+  // Alternatively the letter O in edit_options means that abook_type
+  // must begin with "ord_", indicating types used with the procedure
+  // ordering system.
+  // Alternatively the letter V in edit_options means that abook_type
+  // must be "vendor", indicating the Vendor type.
   else if ($data_type == 14) {
+    if (strpos($frow['edit_options'], 'O') !== FALSE)
+      $tmp = "abook_type LIKE 'ord\\_%'";
+    else if (strpos($frow['edit_options'], 'V') !== FALSE)
+      $tmp = "abook_type LIKE 'vendor%'";
+    else
+      $tmp = "( username = '' OR authorized = 1 )";
     $ures = sqlStatement("SELECT id, fname, lname, organization, username FROM users " .
       "WHERE active = 1 AND ( info IS NULL OR info NOT LIKE '%Inactive%' ) " .
-      "AND ( username = '' OR authorized = 1 ) " .
+      "AND $tmp " .
       "ORDER BY organization, lname, fname");
     echo "<select name='form_$field_id' id='form_$field_id' title='$description'>";
     echo "<option value=''>" . xl('Unassigned') . "</option>";
@@ -467,6 +492,83 @@ function generate_form_field($frow, $currvalue) {
     if (!$got_selected && strlen($currvalue) > 0) {
       echo "$currvalue <font color='red' title='" . xl('Please choose a valid selection.') . "'>" . xl('Fix this') . "!</font>";
     }
+  }
+
+  // special case for history of lifestyle status; 3 radio buttons and a date text field:
+  else if ($data_type == 28) {
+    $tmp = explode('|', $currvalue);
+    switch(count($tmp)) {
+      case "3": {
+        $resnote = $tmp[0];
+        $restype = $tmp[1];
+        $resdate = $tmp[2];
+      } break;
+      case "2": {
+        $resnote = $tmp[0];
+        $restype = $tmp[1];
+        $resdate = "";
+      } break;
+      case "1": {
+        $resnote = $tmp[0];
+        $resdate = $restype = "";
+      } break;
+      default: {
+        $restype = $resdate = $resnote = "";
+      } break;
+    }
+    $maxlength = empty($frow['max_length']) ? 255 : $frow['max_length'];
+    $fldlength = empty($frow['fld_length']) ?  20 : $frow['fld_length'];
+    
+    echo "<table cellpadding='0' cellspacing='0'>";
+    echo "<tr>";
+	// input text 
+    echo "<td><input type='text'" .
+      " name='form_$field_id'" .
+      " id='form_$field_id'" .
+      " size='$fldlength'" .
+      " maxlength='$maxlength'" .
+      " value='$resnote' />&nbsp;</td>";
+	echo "<td class='bold'>&nbsp;&nbsp;&nbsp;&nbsp;".xl('Status').":&nbsp;</td>";
+    // current
+    echo "<td><input type='radio'" .
+      " name='radio_{$field_id}'" .
+      " id='radio_{$field_id}[current]'" .
+      " value='current".$field_id."'";
+    if ($restype == "current".$field_id) echo " checked";
+    // echo " onclick=\"return clinical_alerts_popup(this.value,'Patient_History')\" />".xl('Current')."&nbsp;</td>";
+	echo "/>".xl('Current')."&nbsp;</td>";
+    // quit
+    echo "<td><input type='radio'" .
+      " name='radio_{$field_id}'" .
+      " id='radio_{$field_id}[quit]'" .
+      " value='quit".$field_id."'";
+    if ($restype == "quit".$field_id) echo " checked";
+    echo "/>".xl('Quit')."&nbsp;</td>";
+    // quit date
+    echo "<td><input type='text' size='6' name='date_$field_id' id='date_$field_id'" .
+      " value='$resdate'" .
+      " title='$description'" .
+      " onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' />" .
+      "<img src='$rootdir/pic/show_calendar.gif' align='absbottom' width='24' height='22'" .
+      " id='img_$field_id' border='0' alt='[?]' style='cursor:pointer'" .
+      " title='" . xl('Click here to choose a date') . "' />&nbsp;</td>";
+    $date_init .= " Calendar.setup({inputField:'date_$field_id', ifFormat:'%Y-%m-%d', button:'img_$field_id'});\n";
+    // never
+    echo "<td><input type='radio'" .
+      " name='radio_{$field_id}'" .
+      " id='radio_{$field_id}[never]'" .
+      " value='never".$field_id."'";
+    if ($restype == "never".$field_id) echo " checked";
+    echo " />".xl('Never')."&nbsp;</td>";
+	// Not Applicable
+    echo "<td><input type='radio'" .
+      " name='radio_{$field_id}'" .
+      " id='radio_{$field_id}[not_applicable]'" .
+      " value='not_applicable".$field_id."'";
+    if ($restype == "not_applicable".$field_id) echo " checked";
+    echo " />".xl('N/A')."&nbsp;</td>";
+    echo "</tr>";
+    echo "</table>";
   }
 
 }
@@ -830,6 +932,62 @@ function generate_print_field($frow, $currvalue) {
     echo "</table>";
   }
 
+  // special case for history of lifestyle status; 3 radio buttons and a date text field:
+  else if ($data_type == 28) {
+    $tmp = explode('|', $currvalue);
+	switch(count($tmp)) {
+      case "3": {
+        $resnote = $tmp[0];
+        $restype = $tmp[1];
+        $resdate = $tmp[2];
+      } break;
+      case "2": {
+        $resnote = $tmp[0];
+        $restype = $tmp[1];
+        $resdate = "";
+      } break;
+      case "1": {
+        $resnote = $tmp[0];
+        $resdate = $restype = "";
+      } break;
+      default: {
+        $restype = $resdate = $resnote = "";
+      } break;
+    }
+    $maxlength = empty($frow['max_length']) ? 255 : $frow['max_length'];
+    $fldlength = empty($frow['fld_length']) ?  20 : $frow['fld_length'];
+    echo "<table cellpadding='0' cellspacing='0'>";
+    echo "<tr>";
+	
+    echo "<td><input type='text'" .
+      " size='$fldlength'" .
+      " class='under'" .
+      " value='$resnote' /></td>";
+	echo "<td class='bold'>&nbsp;&nbsp;&nbsp;&nbsp;".xl('Status').":&nbsp;</td>";  
+    echo "<td><input type='radio'";
+    if ($restype == "current".$field_id) echo " checked";
+    echo "/>".xl('Current')."&nbsp;</td>";
+    
+    echo "<td><input type='radio'";
+    if ($restype == "current".$field_id) echo " checked";
+    echo "/>".xl('Quit')."&nbsp;</td>";
+    
+    echo "<td><input type='text' size='6'" .
+      " value='$resdate'" .
+      " class='under'" .
+      " /></td>";
+    
+    echo "<td><input type='radio'";
+    if ($restype == "current".$field_id) echo " checked";
+    echo " />".xl('Never')."</td>";
+	
+    echo "<td><input type='radio'";
+    if ($restype == "not_applicable".$field_id) echo " checked";
+    echo " />".xl('N/A')."&nbsp;</td>";
+    echo "</tr>";
+    echo "</table>";
+  }
+
 }
 
 function generate_display_field($frow, $currvalue) {
@@ -1024,6 +1182,45 @@ function generate_display_field($frow, $currvalue) {
     $s .= "</table>";
   }
 
+  // special case for history of lifestyle status; 3 radio buttons and a date text field:
+  else if ($data_type == 28) {
+    $tmp = explode('|', $currvalue);
+    switch(count($tmp)) {
+      case "3": {
+        $resnote = $tmp[0];
+        $restype = $tmp[1];
+        $resdate = $tmp[2];
+      } break;
+      case "2": {
+        $resnote = $tmp[0];
+        $restype = $tmp[1];
+        $resdate = "";
+      } break;
+      case "1": {
+        $resnote = $tmp[0];
+        $resdate = $restype = "";
+      } break;
+      default: {
+        $restype = $resdate = $resnote = "";
+      } break;
+    }
+    $s .= "<table cellpadding='0' cellspacing='0'>";
+      
+    $s .= "<tr>";
+	$res = "";
+    if ($restype == "current".$field_id) $res = xl('Current');
+	if ($restype == "quit".$field_id) $res = xl('Quit');
+	if ($restype == "never".$field_id) $res = xl('Never');
+	if ($restype == "not_applicable".$field_id) $res = xl('N/A');
+    // $s .= "<td class='text' valign='top'>$restype</td></tr>";
+    // $s .= "<td class='text' valign='top'>$resnote</td></tr>";
+    if (!empty($resnote)) $s .= "<td class='text' valign='top'>$resnote&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>";
+	if (!empty($res)) $s .= "<td class='text' valign='top'><b>".xl('Status')."</b>:&nbsp;".$res."&nbsp;</td>";
+    if ($restype == "quit".$field_id) $s .= "<td class='text' valign='top'>$resdate&nbsp;</td>";
+    $s .= "</tr>";
+    $s .= "</table>";
+  }
+
   return $s;
 }
 
@@ -1155,6 +1352,244 @@ function display_layout_rows($formtype, $result1, $result2='') {
   disp_end_group();
 }
 
+function display_layout_tabs($formtype, $result1, $result2='') {
+  global $item_count, $cell_count, $last_group, $CPR;
+
+  $fres = sqlStatement("SELECT distinct group_name FROM layout_options " .
+    "WHERE form_id = '$formtype' AND uor > 0 " .
+    "ORDER BY group_name, seq");
+
+  $first = true;
+  while ($frow = sqlFetchArray($fres)) {
+	  $this_group = $frow['group_name'];
+      $group_name = substr($this_group, 1);
+      ?>
+		<li <?php echo $first ? 'class="current"' : '' ?>>
+			<a href="/play/javascript-tabbed-navigation/" id="header_tab_<?php echo $group_name?>"><?php echo xl_layout_label($group_name); ?></a>
+		</li>
+	  <?php
+	  $first = false;
+  }
+}
+
+function display_layout_tabs_data($formtype, $result1, $result2='') {
+  global $item_count, $cell_count, $last_group, $CPR;
+
+  $fres = sqlStatement("SELECT distinct group_name FROM layout_options " .
+    "WHERE form_id = '$formtype' AND uor > 0 " .
+    "ORDER BY group_name, seq");
+
+	$first = true;
+	while ($frow = sqlFetchArray($fres)) {
+		$this_group = $frow['group_name'];
+		$titlecols  = $frow['titlecols'];
+		$datacols   = $frow['datacols'];
+		$data_type  = $frow['data_type'];
+		$field_id   = $frow['field_id'];
+		$list_id    = $frow['list_id'];
+		$currvalue  = '';
+
+		$group_fields_query = sqlStatement("SELECT * FROM layout_options " .
+		"WHERE form_id = '$formtype' AND uor > 0 AND group_name = '$this_group' " .
+		"ORDER BY seq");
+	?>
+
+		<div class="tab <?php echo $first ? 'current' : '' ?>">
+			<table border='0' cellpadding='0'>
+
+			<?php
+				while ($group_fields = sqlFetchArray($group_fields_query)) {
+
+					$titlecols  = $group_fields['titlecols'];
+					$datacols   = $group_fields['datacols'];
+					$data_type  = $group_fields['data_type'];
+					$field_id   = $group_fields['field_id'];
+					$list_id    = $group_fields['list_id'];
+					$currvalue  = '';
+
+					if ($formtype == 'DEM') {
+					  if ($GLOBALS['athletic_team']) {
+						// Skip fitness level and return-to-play date because those appear
+						// in a special display/update form on this page.
+						if ($field_id === 'fitness' || $field_id === 'userdate1') continue;
+					  }
+					  if (strpos($field_id, 'em_') === 0) {
+					// Skip employer related fields, if it's disabled.
+						if ($GLOBALS['omit_employers']) continue;
+						$tmp = substr($field_id, 3);
+						if (isset($result2[$tmp])) $currvalue = $result2[$tmp];
+					  }
+					  else {
+						if (isset($result1[$field_id])) $currvalue = $result1[$field_id];
+					  }
+					}
+					else {
+					  if (isset($result1[$field_id])) $currvalue = $result1[$field_id];
+					}
+
+					// Handle a data category (group) change.
+					if (strcmp($this_group, $last_group) != 0) {
+					  $group_name = substr($this_group, 1);
+					  // totally skip generating the employer category, if it's disabled.
+					  if ($group_name === 'Employer' && $GLOBALS['omit_employers']) continue;
+					  $last_group = $this_group;
+					}
+
+					// Handle starting of a new row.
+					if (($titlecols > 0 && $cell_count >= $CPR) || $cell_count == 0) {
+					  disp_end_row();
+					  echo "<tr>";
+					}
+
+					if ($item_count == 0 && $titlecols == 0) {
+						$titlecols = 1;
+					}
+
+					// Handle starting of a new label cell.
+					if ($titlecols > 0) {
+					  disp_end_cell();
+					  echo "<td class='label' colspan='$titlecols' ";
+					  echo ">";
+					  $cell_count += $titlecols;
+					}
+					++$item_count;
+
+					// Added 5-09 by BM - Translate label if applicable
+					if ($group_fields['title']) echo (xl_layout_label($group_fields['title']).":"); else echo "&nbsp;";
+
+					// Handle starting of a new data cell.
+					if ($datacols > 0) {
+					  disp_end_cell();
+					  echo "<td class='text data' colspan='$datacols'";
+					  echo ">";
+					  $cell_count += $datacols;
+					}
+
+					++$item_count;
+					echo generate_display_field($group_fields, $currvalue);
+				  }
+			?>
+
+			</table>
+		</div>
+
+ 	 <?php
+
+	$first = false;
+
+	}
+
+}
+
+function display_layout_tabs_data_editable($formtype, $result1, $result2='') {
+  global $item_count, $cell_count, $last_group, $CPR;
+
+  $fres = sqlStatement("SELECT distinct group_name FROM layout_options " .
+    "WHERE form_id = '$formtype' AND uor > 0 " .
+    "ORDER BY group_name, seq");
+
+	$first = true;
+	while ($frow = sqlFetchArray($fres)) {
+		$this_group = $frow['group_name'];
+		$group_name = substr($this_group, 1);
+		$titlecols  = $frow['titlecols'];
+		$datacols   = $frow['datacols'];
+		$data_type  = $frow['data_type'];
+		$field_id   = $frow['field_id'];
+		$list_id    = $frow['list_id'];
+		$currvalue  = '';
+
+		$group_fields_query = sqlStatement("SELECT * FROM layout_options " .
+		"WHERE form_id = '$formtype' AND uor > 0 AND group_name = '$this_group' " .
+		"ORDER BY seq");
+	?>
+
+		<div class="tab <?php echo $first ? 'current' : '' ?>" id="tab_<?php echo $group_name?>" >
+			<table border='0' cellpadding='0'>
+
+			<?php
+				while ($group_fields = sqlFetchArray($group_fields_query)) {
+
+					$titlecols  = $group_fields['titlecols'];
+					$datacols   = $group_fields['datacols'];
+					$data_type  = $group_fields['data_type'];
+					$field_id   = $group_fields['field_id'];
+					$list_id    = $group_fields['list_id'];
+					$currvalue  = '';
+
+					if ($formtype == 'DEM') {
+					  if ($GLOBALS['athletic_team']) {
+						// Skip fitness level and return-to-play date because those appear
+						// in a special display/update form on this page.
+						if ($field_id === 'fitness' || $field_id === 'userdate1') continue;
+					  }
+					  if (strpos($field_id, 'em_') === 0) {
+					// Skip employer related fields, if it's disabled.
+						if ($GLOBALS['omit_employers']) continue;
+						$tmp = substr($field_id, 3);
+						if (isset($result2[$tmp])) $currvalue = $result2[$tmp];
+					  }
+					  else {
+						if (isset($result1[$field_id])) $currvalue = $result1[$field_id];
+					  }
+					}
+					else {
+					  if (isset($result1[$field_id])) $currvalue = $result1[$field_id];
+					}
+
+					// Handle a data category (group) change.
+					if (strcmp($this_group, $last_group) != 0) {
+					  $group_name = substr($this_group, 1);
+					  // totally skip generating the employer category, if it's disabled.
+					  if ($group_name === 'Employer' && $GLOBALS['omit_employers']) continue;
+					  $last_group = $this_group;
+					}
+
+					// Handle starting of a new row.
+					if (($titlecols > 0 && $cell_count >= $CPR) || $cell_count == 0) {
+					  disp_end_row();
+					  echo "<tr>";
+					}
+
+					if ($item_count == 0 && $titlecols == 0) {
+						$titlecols = 1;
+					}
+
+					// Handle starting of a new label cell.
+					if ($titlecols > 0) {
+					  disp_end_cell();
+					  echo "<td class='label' colspan='$titlecols' ";
+					  echo ">";
+					  $cell_count += $titlecols;
+					}
+					++$item_count;
+
+					// Added 5-09 by BM - Translate label if applicable
+					if ($group_fields['title']) echo (xl_layout_label($group_fields['title']).":"); else echo "&nbsp;";
+
+					// Handle starting of a new data cell.
+					if ($datacols > 0) {
+					  disp_end_cell();
+					  echo "<td class='text data' colspan='$datacols'";
+					  echo ">";
+					  $cell_count += $datacols;
+					}
+
+					++$item_count;
+					echo generate_form_field($group_fields, $currvalue);
+				  }
+			?>
+
+			</table>
+		</div>
+
+ 	 <?php
+
+	$first = false;
+
+	}
+}
+
 // From the currently posted HTML form, this gets the value of the
 // field corresponding to the provided layout_options table row.
 //
@@ -1201,6 +1636,15 @@ function get_layout_form_value($frow, $maxlength=255) {
         $value .= "$key:$restype:$val";
       }
     }
+    else if ($data_type == 28) {
+      // $_POST["form_$field_id"] is an date text fields with companion
+      // radio buttons to be imploded into "notes|type|date".
+      $restype = $_POST["radio_{$field_id}"];
+      if (empty($restype)) $restype = '0';
+      $resdate = str_replace('|', ' ', $_POST["date_$field_id"]);
+      $resnote = str_replace('|', ' ', $_POST["form_$field_id"]);
+      $value = "$resnote|$restype|$resdate";
+    }
     else {
       $value = $_POST["form_$field_id"];
     }
@@ -1238,10 +1682,8 @@ function generate_layout_validation($form_id) {
       case 26:
         echo
         " if (f.$fldname.selectedIndex <= 0) {\n" .
-        "  alert('" . xl('Please choose a value for','','',' ') .
-        xl_layout_label($fldtitle) . "');\n" .
         "  if (f.$fldname.focus) f.$fldname.focus();\n" .
-        "  return false;\n" .
+        "  		errMsgs[errMsgs.length] = '" . addslashes(xl_layout_label($fldtitle)) . "'; \n" .
         " }\n";
         break;
       case 27: // radio buttons
@@ -1249,9 +1691,7 @@ function generate_layout_validation($form_id) {
         " var i = 0;\n" .
         " for (; i < f.$fldname.length; ++i) if (f.$fldname[i].checked) break;\n" .
         " if (i >= f.$fldname.length) {\n" .
-        "  alert('" . xl('Please choose a value for','','',' ') .
-        xl_layout_label($fldtitle) . "');\n" .
-        "  return false;\n" .
+        "  		errMsgs[errMsgs.length] = '" . addslashes(xl_layout_label($fldtitle)) . "'; \n" .
         " }\n";
         break;
       case  2:
@@ -1260,11 +1700,14 @@ function generate_layout_validation($form_id) {
       case 15:
         echo
         " if (trimlen(f.$fldname.value) == 0) {\n" .
-        "  alert('" . xl('Please choose a value for','','',' ') .
-        xl_layout_label($fldtitle) . "');\n" .
-        "  if (f.$fldname.focus) f.$fldname.focus();\n" .
-        "  return false;\n" .
-        " }\n";
+        "  		if (f.$fldname.focus) f.$fldname.focus();\n" .
+		"  		$('#form_" . $field_id . "').parents('div.tab').each( function(){ var tabHeader = $('#header_' + $(this).attr('id') ); tabHeader.css('color','red'); } ); " .
+		"  		$('#form_" . $field_id . "').attr('style','background:red'); \n" .
+        "  		errMsgs[errMsgs.length] = '" . addslashes(xl_layout_label($fldtitle)) . "'; \n" .
+        " } else { " .
+		" 		$('#form_" . $field_id . "').attr('style',''); " .
+		"  		$('#form_" . $field_id . "').parents('div.tab').each( function(){ var tabHeader = $('#header_' + $(this).attr('id') ); tabHeader.css('color','');  } ); " .
+		" } \n";
         break;
     }
   }

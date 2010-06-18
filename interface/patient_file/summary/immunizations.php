@@ -27,7 +27,7 @@ if (isset($mode)) {
     }
     elseif ($mode == "delete" ) {
         // log the event
-        newEvent("delete", $_SESSION['authUser'], $_SESSION['authProvider'], "Immunization id ".$_POST['id']." deleted from pid ".$_POST['pid']);
+        newEvent("delete", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "Immunization id ".$_POST['id']." deleted from pid ".$_POST['pid']);
         // delete the immunization
         $sql="DELETE FROM immunizations WHERE id =". mysql_real_escape_string($id)." LIMIT 1";
         sqlStatement($sql);
@@ -75,7 +75,7 @@ if (!$administered_by && !$administered_by_id) {
 <!-- pop up calendar -->
 <style type="text/css">@import url(<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar.css);</style>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar_en.js"></script>
+<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar_setup.js"></script>
 
 <script language="JavaScript">

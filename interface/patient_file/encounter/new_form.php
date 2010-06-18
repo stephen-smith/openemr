@@ -33,7 +33,7 @@ include_once("$srcdir/registry.inc");
 function myGetRegistered($state="1", $limit="unlimited", $offset="0") {
   $sql = "SELECT category, nickname, name, state, directory, id, sql_run, " .
     "unpackaged, date FROM registry WHERE " .
-    "state LIKE \"$state\" ORDER BY category, priority";
+    "state LIKE \"$state\" ORDER BY category, priority, name";
   if ($limit != "unlimited") $sql .= " limit $limit, $offset";
   $res = sqlStatement($sql);
   if ($res) {
@@ -83,7 +83,7 @@ if (sqlNumRows($lres)) {
     $option_id = $lrow['option_id']; // should start with LBF
     $title = $lrow['title'];
 	  echo "<option value='$rootdir/patient_file/encounter/load_form.php?" .
-      "formname=$option_id'>$title</option>\n";
+      "formname=$option_id'>" . xl_form_title($title) . "</option>\n";
   }
   echo "</select>\n";
 }

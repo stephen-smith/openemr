@@ -3,13 +3,13 @@
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-
 require_once("../globals.php");
 require_once("../../library/acl.inc");
 require_once("$srcdir/md5.js");
 require_once("$srcdir/sql.inc");
 require_once("$srcdir/calendar.inc");
 require_once("$srcdir/formdata.inc.php");
+require_once("$srcdir/options.inc.php");
 require_once(dirname(__FILE__) . "/../../library/classes/WSProvider.class.php");
 
 if (!$_GET["id"] || !acl_check('admin', 'users'))
@@ -69,7 +69,7 @@ if ($_GET["mode"] == "update") {
 	    and table_id={$_GET["id"]}
 	    and facility_id not in (" . implode(",", $_GET['schedule_facility']) . ")");
 	  foreach($_GET["schedule_facility"] as $tqvar) {
-      sqlStatement("replace into users_facility set 
+      sqlStatement("replace into users_facility set
 		    facility_id = '$tqvar',
 		    tablename='users',
 		    table_id = {$_GET["id"]}");
@@ -79,19 +79,24 @@ if ($_GET["mode"] == "update") {
           $tqvar = formData('fname','G');
           sqlStatement("update users set fname='$tqvar' where id={$_GET["id"]}");
   }
-
   //(CHEMED) Calendar UI preference
   if ($_GET["cal_ui"]) {
           $tqvar = formData('cal_ui','G');
           sqlStatement("update users set cal_ui = '$tqvar' where id = {$_GET["id"]}");
-      
+
           // added by bgm to set this session variable if the current user has edited
 	  //   their own settings
 	  if ($_SESSION['authId'] == $_GET["id"]) {
-	    $_SESSION['cal_ui'] = $tqvar;   
+	    $_SESSION['cal_ui'] = $tqvar;
 	  }
   }
   //END (CHEMED) Calendar UI preference
+
+  if (isset($_GET['default_warehouse'])) {
+    sqlStatement("UPDATE users SET default_warehouse = '" .
+      formData('default_warehouse','G') .
+      "' WHERE id = '" . $formData('id','G') . "'");
+  }
 
   if ($_GET["newauthPass"] && $_GET["newauthPass"] != "d41d8cd98f00b204e9800998ecf8427e") { // account for empty
     $tqvar = formData('newauthPass','G');
@@ -126,23 +131,116 @@ if ($_GET["mode"] == "update") {
 
   $ws = new WSProvider($_GET['id']);
 
+  /*Dont move usergroup_admin (1).php just close window
   // On a successful update, return to the users list.
   include("usergroup_admin.php");
   exit(0);
+  */  	echo '
+<script type="text/javascript">
+<!--
+parent.$.fn.fancybox.close();
+//-->
+</script>
+
+	';
 }
 
 $res = sqlStatement("select * from users where id={$_GET["id"]}");
 for ($iter = 0;$row = sqlFetchArray($res);$iter++)
                 $result[$iter] = $row;
 $iter = $result[0];
+
+///
+if (isset($_POST["mode"])) {
+  	echo '
+<script type="text/javascript">
+<!--
+parent.$.fn.fancybox.close();
+//-->
+</script>
+
+	';
+}
+///
+
 ?>
+
 <html>
 <head>
 
 <link rel="stylesheet" href="<?php echo $css_header; ?>" type="text/css">
+<script type="text/javascript" src="../../../library/dialog.js"></script>
+<script type="text/javascript" src="../../../library/js/jquery.1.3.2.js"></script>
+<script type="text/javascript" src="../../../library/js/common.js"></script>
+<script src="checkpwd_validation.js" type="text/javascript"></script>
 
 <script language="JavaScript">
+function submitform() {
+	top.restoreSession();
+	var flag=0;
+	if(document.forms[0].clearPass.value!="")
+	{
+		//Checking for the strong password if the 'secure password' feature is enabled
+		if(document.forms[0].secure_pwd.value == 1)
+		{
+			var pwdresult = passwordvalidate(document.forms[0].clearPass.value);
+			if(pwdresult == 0) {
+				flag=1;
+				alert("<?php echo xl('The password must be at least eight characters, and should'); echo '\n'; echo xl('contain at least three of the four following items:'); echo '\n'; echo xl('A number'); echo '\n'; echo xl('A lowercase letter'); echo '\n'; echo xl('An uppercase letter'); echo '\n'; echo xl('A special character');echo '('; echo xl('not a letter or number'); echo ').'; echo '\n'; echo xl('For example:'); echo ' healthCare@09'; ?>");
+				return false;
+			}
+		}
+		//Checking for password history if the 'password history' feature is enabled.
+		if(document.forms[0].pwd_history.value == 1){
+			var p  = MD5(document.forms[0].clearPass.value);
+			var p1 = document.forms[0].pwd.value;
+			var p2 = document.forms[0].pwd_history1.value;
+			var p3 = document.forms[0].pwd_history2.value;
+			if((p == p1) || (p == p2) || (p == p3))
+			{
+				flag=1;
+				document.getElementById('error_message').innerHTML="<?php xl('Recent three passwords are not allowed.',e) ?>";
+				return false;
+			}
+		}
 
+	}//If pwd null ends here
+	//Request to reset the user password if the user was deactived once the password expired.
+	if((document.forms[0].pwd_expires.value != 0) && (document.forms[0].clearPass.value == "")) {
+		if((document.forms[0].user_type.value != "Emergency Login") && (document.forms[0].pre_active.value == 0) && (document.forms[0].active.checked == 1) && (document.forms[0].grace_time.value != "") && (document.forms[0].current_date.value) > (document.forms[0].grace_time.value))
+		{
+			flag=1;
+			document.getElementById('error_message').innerHTML="<?php xl('Please reset the password.',e) ?>";
+		}
+	}
+	var sel = getSelected(document.forms[0].access_group_id.options);
+	for (var item in sel){       
+            if(sel[item].value == "Emergency Login"){
+                 document.forms[0].check_acl.value = 1; 
+            }
+          }
+
+	if(flag == 0){
+		document.forms[0].newauthPass.value=MD5(document.forms[0].clearPass.value);document.forms[0].clearPass.value='';
+		document.forms[0].submit();
+		parent.$.fn.fancybox.close(); 
+	}
+}
+//Getting the list of selected item in ACL
+function getSelected(opt) {
+         var selected = new Array();
+            var index = 0;
+            for (var intLoop = 0; intLoop < opt.length; intLoop++) {
+               if ((opt[intLoop].selected) ||
+                   (opt[intLoop].checked)) {
+                  index = selected.length;
+                  selected[index] = new Object;
+                  selected[index].value = opt[intLoop].value;
+                  selected[index].index = intLoop;
+               }
+            }
+            return selected;
+         }
 function authorized_clicked() {
  var f = document.forms[0];
  f.calendar.disabled = !f.authorized.checked;
@@ -153,29 +251,63 @@ function authorized_clicked() {
 
 </head>
 <body class="body_top">
+<table><tr><td>
+<span class="title"><?php xl('Edit User','e'); ?></span>&nbsp;
+</td><td>
+    <a class="css_button" name='form_save' id='form_save' href='#' onclick='return submitform()'> <span><?php xl('Save','e');?></span> </a>
+	<a class="css_button" id='cancel' href='#'><span><?php xl('Cancel','e');?></span></a>
+</td></tr>
+</table>
+<br>
+<FORM NAME="user_form" METHOD="GET" ACTION="usergroup_admin.php" target="_parent" onsubmit='return top.restoreSession()'>
+<input type=hidden name="pwd_history" value="<? echo $GLOBALS['password_history']; ?>" >
+<input type=hidden name="pwd_history1" value="<? echo $iter["pwd_history1"]; ?>" >
+<input type=hidden name="pwd_history2" value="<? echo $iter["pwd_history2"]; ?>" >
+<input type=hidden name="pwd" value="<? echo $iter["password"]; ?>" >
 
-<a href="usergroup_admin.php"><span class="title"><?php xl('User Administration','e'); ?></span></a>
-<br><br>
+<input type=hidden name="pwd_expires" value="<? echo $GLOBALS['password_expiration_days']; ?>" >
+<input type=hidden name="pre_active" value="<? echo $iter["active"]; ?>" >
+<input type=hidden name="exp_date" value="<? echo $iter["pwd_expiration_date"]; ?>" >
+<input type=hidden name="get_admin_id" value="<? echo $GLOBALS['Emergency_Login_email']; ?>" >
+<input type=hidden name="admin_id" value="<? echo $GLOBALS['Emergency_Login_email_id']; ?>" >
+<input type=hidden name="check_acl" value="">
+<?php 
+//Calculating the grace time 
+$current_date = date("Y-m-d");
+$password_exp=$iter["pwd_expiration_date"];
+if($password_exp != "0000-00-00")
+  {
+    $grace_time1 = date("Y-m-d", strtotime($password_exp . "+".$GLOBALS['password_grace_time'] ."days"));
+  }
+?>
+<input type=hidden name="current_date" value="<? echo strtotime($current_date); ?>" >
+<input type=hidden name="grace_time" value="<? echo strtotime($grace_time1); ?>" >
+<!--  Get the list ACL for the user -->
+<?php
+$acl_name=acl_get_group_titles($iter["username"]);
+$bg_count=count($acl_name);
+   for($i=0;$i<$bg_count;$i++){
+      if($acl_name[$i] == "Emergency Login")
+       $bg_name=$acl_name[$i];
+      }
+?>
+<input type=hidden name="user_type" value="<? echo $bg_name; ?>" >
 
-<FORM NAME="user_form" METHOD="GET" ACTION="user_admin.php">
 <TABLE border=0 cellpadding=0 cellspacing=0>
 <TR>
-<TD><span class=text><?php xl('Username','e'); ?>: </span></TD><TD><input type=entry name=username size=20 value="<?php echo $iter["username"]; ?>" disabled> &nbsp;</td>
-<TD><span class=text><?php xl('Password','e'); ?>: </span></TD><TD class='text'><input type=entry name=clearPass size=20 value=""> * <?php xl('Leave blank to keep password unchanged.','e'); ?></td>
+<TD style="width:180px;"><span class=text><?php xl('Username','e'); ?>: </span></TD><TD style="width:270px;"><input type=entry name=username style="width:150px;" value="<?php echo $iter["username"]; ?>" disabled></td>
+<TD style="width:200px;"><span class=text><?php xl('Password','e'); ?>: </span></TD><TD class='text' style="width:280px;"><input type=entry name=clearPass style="width:150px;"  value=""><font class="mandatory">*</font></td>
 </TR>
 
-<TR>
+<TR height="30" style="valign:middle;">
 <td><span class="text">&nbsp;</span></td><td>&nbsp;</td>
-<TD><span class=text><?php xl('Provider','e'); ?>: </TD>
-<TD>
+<td colspan="2"><span class=text><?php xl('Provider','e'); ?>:
  <input type="checkbox" name="authorized" onclick="authorized_clicked()"<?php
   if ($iter["authorized"]) echo " checked"; ?> />
-
  &nbsp;&nbsp;<span class='text'><?php xl('Calendar','e'); ?>:
  <input type="checkbox" name="calendar"<?php
   if ($iter["calendar"]) echo " checked";
   if (!$iter["authorized"]) echo " disabled"; ?> />
-
  &nbsp;&nbsp;<span class='text'><?php xl('Active','e'); ?>:
  <input type="checkbox" name="active"<?php if ($iter["active"]) echo " checked"; ?> />
 </TD>
@@ -183,13 +315,13 @@ function authorized_clicked() {
 
 <TR>
 <TD><span class=text><?php xl('First Name','e'); ?>: </span></TD>
-<TD><input type=entry name=fname size=20 value="<?php echo $iter["fname"]; ?>"></td>
-<td><span class=text><?php xl('Middle Name','e'); ?>: </span></TD><td><input type=entry name=mname size=20 value="<?php echo $iter["mname"]; ?>"></td>
+<TD><input type=entry name=fname style="width:150px;" value="<?php echo $iter["fname"]; ?>"></td>
+<td><span class=text><?php xl('Middle Name','e'); ?>: </span></TD><td><input type=entry name=mname style="width:150px;"  value="<?php echo $iter["mname"]; ?>"></td>
 </TR>
 
 <TR>
-<td><span class=text><?php xl('Last Name','e'); ?>: </span></td><td><input type=entry name=lname size=20 value="<?php echo $iter["lname"]; ?>"></td>
-<td><span class=text><?php xl('Default Facility','e'); ?>: </span></td><td><select name=facility_id>
+<td><span class=text><?php xl('Last Name','e'); ?>: </span></td><td><input type=entry name=lname style="width:150px;"  value="<?php echo $iter["lname"]; ?>"></td>
+<td><span class=text><?php xl('Default Facility','e'); ?>: </span></td><td><select name=facility_id style="width:150px;" >
 <?php
 $fres = sqlStatement("select * from facility where service_location != 0 order by name");
 if ($fres) {
@@ -210,7 +342,7 @@ foreach($result as $iter2) {
  <td colspan=2>&nbsp;</td>
  <td><span class=text><?php xl('Schedule Facilities:', 'e');?></td>
  <td>
-  <select name="schedule_facility[]" multiple>
+  <select name="schedule_facility[]" multiple style="width:150px;" >
 <?php
   $userFacilities = getUserFacilities($_GET['id']);
   $ufid = array();
@@ -218,7 +350,7 @@ foreach($result as $iter2) {
     $ufid[] = $uf['id'];
   $fres = sqlStatement("select * from facility where service_location != 0 order by name");
   if ($fres) {
-    while($frow = sqlFetchArray($fres)): 
+    while($frow = sqlFetchArray($fres)):
 ?>
    <option <?php echo in_array($frow['id'], $ufid) || $frow['id'] == $iter['facility_id'] ? "selected" : null ?>
     value="<?php echo $frow['id'] ?>"><?php echo $frow['name'] ?></option>
@@ -232,14 +364,14 @@ foreach($result as $iter2) {
 <?php } ?>
 
 <TR>
-<TD><span class=text><?php xl('Federal Tax ID','e'); ?>: </span></TD><TD><input type=text name=taxid size=20 value="<?php echo $iter["federaltaxid"]?>"></td>
-<TD><span class=text><?php xl('Federal Drug ID','e'); ?>: </span></TD><TD><input type=text name=drugid size=20 value="<?php echo $iter["federaldrugid"]?>"></td>
+<TD><span class=text><?php xl('Federal Tax ID','e'); ?>: </span></TD><TD><input type=text name=taxid style="width:150px;"  value="<?php echo $iter["federaltaxid"]?>"></td>
+<TD><span class=text><?php xl('Federal Drug ID','e'); ?>: </span></TD><TD><input type=text name=drugid style="width:150px;"  value="<?php echo $iter["federaldrugid"]?>"></td>
 </TR>
 
 <tr>
-<td><span class="text"><?php xl('UPIN','e'); ?>: </span></td><td><input type="text" name="upin" size="20" value="<?php echo $iter["upin"]?>"></td>
+<td><span class="text"><?php xl('UPIN','e'); ?>: </span></td><td><input type="text" name="upin" style="width:150px;" value="<?php echo $iter["upin"]?>"></td>
 <td class='text'><?php xl('See Authorizations','e'); ?>: </td>
-<td><select name="see_auth">
+<td><select name="see_auth" style="width:150px;" >
 <?php
  foreach (array(1 => xl('None'), 2 => xl('Only Mine'), 3 => xl('All')) as $key => $value)
  {
@@ -252,22 +384,22 @@ foreach($result as $iter2) {
 </tr>
 
 <tr>
-<td><span class="text"><?php xl('NPI','e'); ?>: </span></td><td><input type="text" name="npi" size="20" value="<?php echo $iter["npi"]?>"></td>
-<td><span class="text"><?php xl('Job Description','e'); ?>: </span></td><td><input type="text" name="job" size="20" value="<?php echo $iter["specialty"]?>"></td>
+<td><span class="text"><?php xl('NPI','e'); ?>: </span></td><td><input type="text" name="npi" style="width:150px;"  value="<?php echo $iter["npi"]?>"></td>
+<td><span class="text"><?php xl('Job Description','e'); ?>: </span></td><td><input type="text" name="job" style="width:150px;"  value="<?php echo $iter["specialty"]?>"></td>
 </tr>
 
 <?php if (!empty($GLOBALS['ssi']['rh'])) { ?>
 <tr>
 <td><span class="text"><?php xl('Relay Health ID', 'e'); ?>: </span></td>
-<td><input type="password" name="ssi_relayhealth" size="20" value="<?php echo $iter["ssi_relayhealth"]; ?>"></td>
+<td><input type="password" name="ssi_relayhealth" style="width:150px;"  value="<?php echo $iter["ssi_relayhealth"]; ?>"></td>
 </tr>
 <?php } ?>
 
 <!-- (CHEMED) Calendar UI preference -->
 <tr>
 <td><span class="text"><?php xl('Taxonomy','e'); ?>: </span></td>
-<td><input type="text" name="taxonomy" size="20" value="<?php echo $iter["taxonomy"]?>"></td>
-<td><span class="text"><?php xl('Calendar UI','e'); ?>: </span></td><td><select name="cal_ui">
+<td><input type="text" name="taxonomy" style="width:150px;"  value="<?php echo $iter["taxonomy"]?>"></td>
+<td><span class="text"><?php xl('Calendar UI','e'); ?>: </span></td><td><select name="cal_ui" style="width:150px;" >
 <?php
  foreach (array(3 => xl('Outlook'), 1 => xl('Original'), 2 => xl('Fancy')) as $key => $value)
  {
@@ -280,13 +412,28 @@ foreach($result as $iter2) {
 </tr>
 <!-- END (CHEMED) Calendar UI preference -->
 
+<tr>
+<?php if ($GLOBALS['inhouse_pharmacy']) { ?>
+ <td class="text"><?php xl('Default Warehouse','e'); ?>: </td>
+ <td class='text'>
+<?php
+echo generate_select_list('default_warehouse', 'warehouse',
+  $iter['default_warehouse'], '');
+?>
+ </td>
+<?php } else { ?>
+ <td></td><td></td>
+<?php } ?>
+ <td></td><td></td> <!-- This space available -->
+</tr>
+
 <?php
  // Collect the access control group of user
  if (isset($phpgacl_location) && acl_check('admin', 'acl')) {
 ?>
   <tr>
   <td class='text'><?php xl('Access Control','e'); ?>:</td>
-  <td><select name="access_group[]" multiple>
+  <td><select id="access_group_id" name="access_group[]" multiple style="width:150px;" >
   <?php
    $list_acl_groups = acl_get_group_title_list();
    $username_acl_groups = acl_get_group_titles($iter["username"]);
@@ -301,28 +448,41 @@ foreach($result as $iter2) {
     }
    }
   ?>
-  </select></td></tr>
+  </select></td>
+  <td><span class=text><?php xl('Additional Info','e'); ?>:</span></td>
+  <td><textarea style="width:150px;" name="comments" wrap=auto rows=4 cols=25><?php echo $iter["info"];?></textarea></td>
+
+  </tr>
+  <tr height="20" valign="bottom">
+  <td colspan="4" class="text">
+  <font class="mandatory">*</font> <?php xl('Leave blank to keep password unchanged.','e'); ?>
+<!--
+Display red alert if entered password matched one of last three passwords/Display red alert if user password was expired and the user was inactivated previously
+-->
+  <div class="redtext" id="error_message">&nbsp;</div>
+  </td>
+  </tr>
 <?php
  }
 ?>
-
-</tr>
 </table>
 
-<span class=text><?php xl('Additional Info','e'); ?>:</span><br>
-<textarea name="comments" wrap=auto rows=4 cols=30><?php echo $iter["info"];?></textarea>
-
-<br>&nbsp;&nbsp;&nbsp;
 <INPUT TYPE="HIDDEN" NAME="id" VALUE="<?php echo $_GET["id"]; ?>">
 <INPUT TYPE="HIDDEN" NAME="mode" VALUE="update">
+<INPUT TYPE="HIDDEN" NAME="privatemode" VALUE="user_admin">
 <INPUT TYPE="HIDDEN" NAME="newauthPass" VALUE="">
-<INPUT TYPE="Submit" VALUE=<?php xl('Save Changes','e'); ?> onClick="javascript:this.form.newauthPass.value=MD5(this.form.clearPass.value);this.form.clearPass.value='';">
-&nbsp;&nbsp;&nbsp;
-<a href="usergroup_admin.php" class=link_submit>[<?php xl('Back','e'); ?>]</font></a>
+<INPUT TYPE="HIDDEN" NAME="secure_pwd" VALUE="<? echo $GLOBALS['secure_password']; ?>">
 </FORM>
+<script language="JavaScript">
+$(document).ready(function(){
+    $("#cancel").click(function() {
+		  parent.$.fn.fancybox.close();
+	 });
 
-<br><br>
+});
+</script>
 </BODY>
+
 </HTML>
 
 <?php

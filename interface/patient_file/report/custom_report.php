@@ -51,6 +51,11 @@ function postToGet($arin) {
 <head>
 <?php html_header_show();?>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
+<style>
+ @media print {
+  .navigateLink {display:none;}		
+ }		
+</style>
 </head>
 
 <body class="body_top">
@@ -394,7 +399,7 @@ foreach ($ar as $key => $val) {
                 $form_encounter = $val;
                 preg_match('/^(.*)_(\d+)$/', $key, $res);
                 $form_id = $res[2];
-                $formres = getFormNameByFormdir($res[1]);
+                $formres = getFormNameByFormdirAndFormid($res[1],$form_id);
                 $dateres = getEncounterDateByEncounter($form_encounter);
 
                 if ($res[1] == 'newpatient') {

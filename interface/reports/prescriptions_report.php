@@ -8,7 +8,9 @@
 
  // This report lists prescriptions and their dispensations according
  // to various input selection criteria.
-
+ // 
+ // Fix drug name search to work in a broader sense - tony@mi-squared.com 2010
+ 
  require_once("../globals.php");
  require_once("$srcdir/patient.inc");
  require_once("$srcdir/options.inc.php");
@@ -28,6 +30,8 @@
 <script type="text/javascript" src="../../library/overlib_mini.js"></script>
 <script type="text/javascript" src="../../library/textformat.js"></script>
 <script type="text/javascript" src="../../library/dialog.js"></script>
+<script type="text/javascript" src="../../library/js/jquery.1.3.2.js"></script>
+
 <script language="JavaScript">
 
  var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';
@@ -45,63 +49,27 @@
 
 /* specifically include & exclude from printing */
 @media print {
-    #rxdrugreport_parameters {
+    #report_parameters {
         visibility: hidden;
         display: none;
     }
-    #rxdrugreport_parameters_daterange {
+    #report_parameters_daterange {
         visibility: visible;
         display: inline;
     }
+    #report_results table {
+       margin-top: 0px;
+    }    
 }
 
 /* specifically exclude some from the screen */
 @media screen {
-    #rxdrugreport_parameters_daterange {
+    #report_parameters_daterange {
         visibility: hidden;
         display: none;
     }
 }
 
-#rxdrugreport_parameters {
-    width: 100%;
-    background-color: #ddf;
-}
-#rxdrugreport_parameters table {
-    border: none;
-    border-collapse: collapse;
-}
-#rxdrugreport_parameters table td {
-    padding: 3px;
-}
-
-#rxdrugreport_results {
-    width: 100%;
-    margin-top: 10px;
-}
-#rxdrugreport_results table {
-   border: 1px solid black;
-   width: 98%;
-   border-collapse: collapse;
-}
-#rxdrugreport_results table thead {
-    display: table-header-group;
-    background-color: #ddd;
-}
-#rxdrugreport_results table th {
-    border-bottom: 1px solid black;
-    font-size: 0.7em;
-}
-#rxdrugreport_results table td {
-    padding: 1px;
-    margin: 2px;
-    border-bottom: 1px solid #eee;
-    font-size: 0.7em;
-}
-.rxdrugreport_totals td {
-    background-color: #77ff77;
-    font-weight: bold;
-}
 </style>
 </head>
 
@@ -110,70 +78,127 @@
 <!-- Required for the popup date selectors -->
 <div id="overDiv" style="position:absolute; visibility:hidden; z-index:1000;"></div>
 
-<center>
+<span class='title'><?php xl('Report','e'); ?> - <?php xl('Prescriptions and Dispensations','e'); ?></span>
 
-<h2><?php xl('Prescriptions and Dispensations','e'); ?></h2>
-
-<div id="rxdrugreport_parameters_daterange">
+<div id="report_parameters_daterange">
 <?php echo date("d F Y", strtotime($form_from_date)) ." &nbsp; to &nbsp; ". date("d F Y", strtotime($form_to_date)); ?>
 </div>
 
-<div id="rxdrugreport_parameters">
+<form name='theform' id='theform' method='post' action='prescriptions_report.php'>
 
-<form name='theform' method='post' action='prescriptions_report.php'>
+<div id="report_parameters">
 
+<input type='hidden' name='form_refresh' id='form_refresh' value=''/>
 <table>
  <tr>
-  <td>
-<?php
- // Build a drop-down list of facilities.
- //
- $query = "SELECT id, name FROM facility ORDER BY name";
- $fres = sqlStatement($query);
- echo "   <select name='form_facility'>\n";
- echo "    <option value=''>-- " . xl('All Facilities') . " --\n";
- while ($frow = sqlFetchArray($fres)) {
-  $facid = $frow['id'];
-  echo "    <option value='$facid'";
-  if ($facid == $form_facility) echo " selected";
-  echo ">" . $frow['name'] . "\n";
- }
- echo "    <option value='0'";
- if ($form_facility === '0') echo " selected";
- echo ">-- " . xl('Unspecified') . " --\n";
- echo "   </select>\n";
-?>
-   &nbsp;<?php xl('From','e'); ?>:
-   <input type='text' name='form_from_date' id="form_from_date" size='10' value='<?php echo $form_from_date ?>'
-    onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' title='yyyy-mm-dd'>
-   <img src='../pic/show_calendar.gif' align='absbottom' width='24' height='22'
-    id='img_from_date' border='0' alt='[?]' style='cursor:pointer'
-    title='<?php xl('Click here to choose a date','e'); ?>'>
-   &nbsp;<?php xl('To','e'); ?>:
-   <input type='text' name='form_to_date' id="form_to_date" size='10' value='<?php echo $form_to_date ?>'
-    onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' title='yyyy-mm-dd'>
-   <img src='../pic/show_calendar.gif' align='absbottom' width='24' height='22'
-    id='img_to_date' border='0' alt='[?]' style='cursor:pointer'
-    title='<?php xl('Click here to choose a date','e'); ?>'>
-   &nbsp;<?php xl('Patient ID','e'); ?>:
-   <input type='text' name='form_patient_id' size='6' maxlength='20' value='<?php echo $form_patient_id ?>'
-    title=<?php xl('Optional numeric patient ID','e','\'','\''); ?> />
-   &nbsp;<?php xl('Drug','e'); ?>:
-   <input type='text' name='form_drug_name' size='10' maxlength='250' value='<?php echo $form_drug_name ?>'
-    title=<?php xl('Optional drug name, use % as a wildcard','e','\'','\''); ?> />
-   &nbsp;<?php xl('Lot','e'); ?>:
-   <input type='text' name='form_lot_number' size='10' maxlength='20' value='<?php echo $form_lot_number ?>'
-    title=<?php xl('Optional lot number, use % as a wildcard','e','\'','\''); ?> />
-   &nbsp;
-   <input type='submit' name='form_refresh' value=<?php xl('Refresh','e'); ?>>
-   &nbsp;
-   <input type='button' value='<?php xl('Print','e'); ?>' onclick='window.print()' />
+  <td width='640px'>
+	<div style='float:left'>
+
+	<table class='text'>
+		<tr>
+			<td class='label'>
+				<?php xl('Facility','e'); ?>:
+			</td>
+			<td>
+				<?php
+				 // Build a drop-down list of facilities.
+				 //
+				 $query = "SELECT id, name FROM facility ORDER BY name";
+				 $fres = sqlStatement($query);
+				 echo "   <select name='form_facility'>\n";
+				 echo "    <option value=''>-- " . xl('All Facilities') . " --\n";
+				 while ($frow = sqlFetchArray($fres)) {
+				  $facid = $frow['id'];
+				  echo "    <option value='$facid'";
+				  if ($facid == $form_facility) echo " selected";
+				  echo ">" . $frow['name'] . "\n";
+				 }
+				 echo "    <option value='0'";
+				 if ($form_facility === '0') echo " selected";
+				 echo ">-- " . xl('Unspecified') . " --\n";
+				 echo "   </select>\n";
+				?>
+			</td>
+			<td class='label'>
+			   <?php xl('From','e'); ?>:
+			</td>
+			<td>
+			   <input type='text' name='form_from_date' id="form_from_date" size='10' value='<?php echo $form_from_date ?>'
+				onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' title='yyyy-mm-dd'>
+			   <img src='../pic/show_calendar.gif' align='absbottom' width='24' height='22'
+				id='img_from_date' border='0' alt='[?]' style='cursor:pointer'
+				title='<?php xl('Click here to choose a date','e'); ?>'>
+			</td>
+			<td class='label'>
+			   <?php xl('To','e'); ?>:
+			</td>
+			<td>
+			   <input type='text' name='form_to_date' id="form_to_date" size='10' value='<?php echo $form_to_date ?>'
+				onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' title='yyyy-mm-dd'>
+			   <img src='../pic/show_calendar.gif' align='absbottom' width='24' height='22'
+				id='img_to_date' border='0' alt='[?]' style='cursor:pointer'
+				title='<?php xl('Click here to choose a date','e'); ?>'>
+			</td>
+		</tr>
+		<tr>
+			<td class='label'>
+			   <?php xl('Patient ID','e'); ?>:
+			</td>
+			<td>
+			   <input type='text' name='form_patient_id' size='10' maxlength='20' value='<?php echo $form_patient_id ?>'
+				title=<?php xl('Optional numeric patient ID','e','\'','\''); ?> />
+			</td>
+			<td class='label'>
+			   <?php xl('Drug','e'); ?>:
+			</td>
+			<td>
+			   <input type='text' name='form_drug_name' size='10' maxlength='250' value='<?php echo $form_drug_name ?>'
+				title=<?php xl('Optional drug name, use % as a wildcard','e','\'','\''); ?> />
+			</td>
+			<td class='label'>
+			   <?php xl('Lot','e'); ?>:
+			</td>
+			<td>
+			   <input type='text' name='form_lot_number' size='10' maxlength='20' value='<?php echo $form_lot_number ?>'
+				title=<?php xl('Optional lot number, use % as a wildcard','e','\'','\''); ?> />
+			</td>
+		</tr>
+	</table>
+
+	</div>
+
+  </td>
+  <td align='left' valign='middle' height="100%">
+	<table style='border-left:1px solid; width:100%; height:100%' >
+		<tr>
+			<td>
+				<div style='margin-left:15px'>
+					<a href='#' class='css_button' onclick='$("#form_refresh").attr("value","true"); $("#theform").submit();'>
+					<span>
+						<?php xl('Submit','e'); ?>
+					</span>
+					</a>
+
+					<?php if ($_POST['form_refresh']) { ?>
+					<a href='#' class='css_button' onclick='window.print()'>
+						<span>
+							<?php xl('Print','e'); ?>
+						</span>
+					</a>
+					<?php } ?>
+				</div>
+			</td>
+		</tr>
+	</table>
   </td>
  </tr>
 </table>
 </div> <!-- end of parameters -->
 
-<div id="rxdrugreport_results">
+<?php
+ if ($_POST['form_refresh']) {
+?>
+<div id="report_results">
 <table>
  <thead>
   <th> <?php xl('Patient','e'); ?> </th>
@@ -197,7 +222,7 @@
    "r.date_modified <= '$form_to_date'";
   //if ($form_patient_id) $where .= " AND r.patient_id = '$form_patient_id'";
   if ($form_patient_id) $where .= " AND p.pubpid = '$form_patient_id'";
-  if ($form_drug_name ) $where .= " AND d.name LIKE '$form_drug_name'";
+  if ($form_drug_name ) $where .= " AND (d.name LIKE '$form_drug_name' OR r.drug LIKE '$form_drug_name')";
   if ($form_lot_number) $where .= " AND i.lot_number LIKE '$form_lot_number'";
 
   $query = "SELECT r.id, r.patient_id, " .
@@ -315,14 +340,18 @@
 </tbody>
 </table>
 </div> <!-- end of results -->
+<?php } else { ?>
+<div class='text'>
+ 	<?php echo xl('Please input search criteria above, and click Submit to view results.', 'e' ); ?>
+</div>
+<?php } ?>
 </form>
-</center>
 </body>
 
 <!-- stuff for the popup calendar -->
 <style type="text/css">@import url(../../library/dynarch_calendar.css);</style>
 <script type="text/javascript" src="../../library/dynarch_calendar.js"></script>
-<script type="text/javascript" src="../../library/dynarch_calendar_en.js"></script>
+<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
 <script type="text/javascript" src="../../library/dynarch_calendar_setup.js"></script>
 <script language="Javascript">
  Calendar.setup({inputField:"form_from_date", ifFormat:"%Y-%m-%d", button:"img_from_date"});

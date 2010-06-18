@@ -72,6 +72,10 @@ if (!isset($_POST["mode"])) {
   $my_authorized = $_POST["authorized"];
 }
 
+// This tells us if only encounters that appear to be missing a "25" modifier
+// are to be reported.
+$missing_mods_only = !empty($_POST['missing_mods_only']);
+
 /*
 $from_date = isset($_POST['from_date']) ? $_POST['from_date'] : date('Y-m-d');
 $to_date   = empty($_POST['to_date'  ]) ? $from_date : $_POST['to_date'];
@@ -139,6 +143,7 @@ function set_button_states() {
   f.bn_x12_encounter.disabled   = !can_generate;
 <?php } ?>
   f.bn_process_hcfa.disabled    = !can_generate;
+  f.bn_hcfa_txt_file.disabled   = !can_generate;
   // f.bn_electronic_file.disabled = !can_bill;
   f.bn_reopen.disabled          = !can_bill;
 <?php } ?>
@@ -162,25 +167,6 @@ function toencounter(pid, pubpid, pname, enc, datestr) {
 <?php } ?>
 }
 
-// Process a click to go to patient demographics.
-// larry :: dbc insert
-<?php if( $GLOBALS['dutchpc'] )
-{
-?>
-function topatient(pid) {
- top.restoreSession();
-<?php if ($GLOBALS['concurrent_layout']) { ?>
- var othername = (window.name == 'RTop') ? 'RBot' : 'RTop';
- parent.frames[othername].location.href =
-  '../patient_file/summary/demographics_full_dutch.php?pid=' + pid;
-<?php } else { ?>
- location.href = '../patient_file/summary/demographics_full_dutch.php?pid=' + pid;
-<?php } ?>
-}
-
-<?php } else
-{ ?>
-
 function topatient(pid) {
  top.restoreSession();
 <?php if ($GLOBALS['concurrent_layout']) { ?>
@@ -191,8 +177,6 @@ function topatient(pid) {
  location.href = '../patient_file/summary/demographics_full.php?pid=' + pid;
 <?php } ?>
 }
-<?php } ?>
-// larry :: end of dbc change
 
 </script>
 </head>
@@ -216,7 +200,7 @@ function topatient(pid) {
 <script type="text/javascript" src="../../library/dialog.js"></script>
 <script type="text/javascript" src="../../library/textformat.js"></script>
 <script type="text/javascript" src="../../library/dynarch_calendar.js"></script>
-<script type="text/javascript" src="../../library/dynarch_calendar_en.js"></script>
+<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
 <script type="text/javascript" src="../../library/dynarch_calendar_setup.js"></script>
 <script language='JavaScript'>
  var mypcc = '1';
@@ -257,12 +241,15 @@ function topatient(pid) {
 
   <td nowrap>
    <input type='checkbox' name='unbilled' <?php if ($unbilled == "on") {echo "checked";}; ?> />
-   <span class='text'><?php xl('Show Unbilled Only','e') ?></span>
-  </td>
-
-  <td nowrap>
+   <span class='text'><?php xl('Unbilled Only','e') ?></span>
+   &nbsp;
    <input type='checkbox' name='authorized' <?php if ($my_authorized == "on") {echo "checked";}; ?> />
-   <span class='text'><?php xl('Show Authorized Only','e') ?></span>
+   <span class='text'><?php xl('Authorized Only','e') ?></span>
+<?php if (!empty($GLOBALS['missing_mods_option'])) { ?>
+   &nbsp;
+   <input type='checkbox' name='missing_mods_only' <?php if ($missing_mods_only) echo "checked"; ?> />
+   <span class='text'><?php xl('Missing Mods Only','e') ?></span>
+<?php } ?>
   </td>
 
   <td align='right' width='10%' nowrap>
@@ -298,7 +285,7 @@ function topatient(pid) {
 ?>
   </td>
 
-  <td colspan='2' class='text' nowrap>
+  <td class='text' nowrap>
    &nbsp;
 <?php if (! file_exists($EXPORT_INC)) { ?>
    <!--
@@ -343,9 +330,12 @@ function topatient(pid) {
  title="<?php xl('Generate and download X12 encounter claim batch','e')?>"
  onclick="alert('<?php xl('After saving your batch, click [View Log] to check for errors.','e'); ?>')">
 <?php } ?>
-<input type="submit" class="subbtn" name="bn_process_hcfa" value="<?php xl('Generate CMS 1500','e')?>"
- title="<?php xl('Generate and download HCFA 1500 paper claims','e')?>"
+<input type="submit" class="subbtn" name="bn_process_hcfa" value="<?php xl('Generate CMS 1500 PDF','e')?>"
+ title="<?php xl('Generate and download CMS 1500 paper claims','e')?>"
  onclick="alert('<?php xl('After saving the PDF, click [View Log] to check for errors.','e'); ?>')">
+<input type="submit" class="subbtn" name="bn_hcfa_txt_file" value="<?php xl('Generate CMS 1500 TEXT','e')?>"
+ title="<?php xl('Making batch text files for uploading to Clearing House and will mark as billed', 'e')?>"
+ onclick="alert('<?php xl('After saving the TEXT file(s), click [View Log] to check for errors.','e'); ?>')">
 <input type="submit" class="subbtn" name="bn_mark" value="<?php xl('Mark as Cleared','e')?>" title="<?php xl('Post to accounting and mark as billed','e')?>">
 <input type="submit" class="subbtn" name="bn_reopen" value="<?php xl('Re-Open','e')?>" title="<?php xl('Mark as not billed','e')?>">
 <!--
@@ -464,6 +454,9 @@ if ($ret = getBillsBetween($from_date,
   $bgcolor = "";
   $skipping = FALSE;
 
+  $mmo_empty_mod = false;
+  $mmo_num_charges = 0;
+
   foreach ($ret as $iter) {
 
     // We include encounters here that have never been billed.  However
@@ -480,17 +473,27 @@ if ($ret = getBillsBetween($from_date,
     $this_encounter_id = $iter['enc_pid'] . "-" . $iter['enc_encounter'];
 
     if ($last_encounter_id != $this_encounter_id) {
+
+      // This dumps all HTML for the previous encounter.
+      //
       if ($lhtml) {
         while ($rcount < $lcount) {
           $rhtml .= "<tr bgcolor='$bgcolor'><td colspan='7'>&nbsp;</td></tr>";
           ++$rcount;
         }
-        echo "<tr bgcolor='$bgcolor'>\n<td rowspan='$rcount' valign='top'>\n$lhtml</td>$rhtml\n";
-        echo "<tr bgcolor='$bgcolor'><td colspan='8' height='5'></td></tr>\n\n";
+        // This test handles the case where we are only listing encounters
+        // that appear to have a missing "25" modifier.
+        if (!$missing_mods_only || ($mmo_empty_mod && $mmo_num_charges > 1)) {
+          echo "<tr bgcolor='$bgcolor'>\n<td rowspan='$rcount' valign='top'>\n$lhtml</td>$rhtml\n";
+          echo "<tr bgcolor='$bgcolor'><td colspan='8' height='5'></td></tr>\n\n";
+          ++$encount;
+        }
       }
 
       $lhtml = "";
       $rhtml = "";
+      $mmo_empty_mod = false;
+      $mmo_num_charges = 0;
 
       // If there are ANY unauthorized items in this encounter and this is
       // the normal case of viewing only authorized billing, then skip the
@@ -522,7 +525,6 @@ if ($ret = getBillsBetween($from_date,
         "subscriber_lname != '' limit 1");
       $namecolor = ($res['count'] > 0) ? "black" : "#ff7777";
 
-      ++$encount;
       $bgcolor = "#" . (($encount & 1) ? "ddddff" : "ffdddd");
       echo "<tr bgcolor='$bgcolor'><td colspan='8' height='5'></td></tr>\n";
       $lcount = 1;
@@ -664,6 +666,14 @@ if ($ret = getBillsBetween($from_date,
 
     if ($skipping) continue;
 
+    // Collect info related to the missing modifiers test.
+    if ($iter['fee'] > 0) {
+      ++$mmo_num_charges;
+      $tmp = substr($iter['code'], 0, 3);
+      if (($tmp == '992' || $tmp == '993') && empty($iter['modifier']))
+        $mmo_empty_mod = true;
+    }
+
     ++$rcount;
 
     if ($rhtml) {
@@ -694,7 +704,10 @@ if ($ret = getBillsBetween($from_date,
       }
     }
 
-    $rhtml .= "<td><span class=text>" . $iter{"code"}. "</span>" . '<span style="font-size:8pt;">' . $justify . "</span></td>\n";
+    $rhtml .= "<td><span class='text'>" . $iter['code'];
+    if ($iter['modifier']) $rhtml .= ":" . $iter['modifier'];
+    $rhtml .= "</span><span style='font-size:8pt;'>$justify</span></td>\n";
+
     $rhtml .= '<td align="right"><span style="font-size:8pt;">&nbsp;&nbsp;&nbsp;';
     if ($iter['id'] && $iter['fee'] > 0) {
       $rhtml .= '$' . $iter['fee'];
@@ -730,8 +743,10 @@ if ($ret = getBillsBetween($from_date,
       $rhtml .= "<tr bgcolor='$bgcolor'><td colspan='7'>&nbsp;</td></tr>";
       ++$rcount;
     }
-    echo "<tr bgcolor='$bgcolor'>\n<td rowspan='$rcount' valign='top'>\n$lhtml</td>$rhtml\n";
-    echo "<tr bgcolor='$bgcolor'><td colspan='8' height='5'></td></tr>\n";
+    if (!$missing_mods_only || ($mmo_empty_mod && $mmo_num_charges > 1)) {
+      echo "<tr bgcolor='$bgcolor'>\n<td rowspan='$rcount' valign='top'>\n$lhtml</td>$rhtml\n";
+      echo "<tr bgcolor='$bgcolor'><td colspan='8' height='5'></td></tr>\n";
+    }
   }
 
 }

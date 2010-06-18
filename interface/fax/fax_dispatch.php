@@ -393,7 +393,7 @@ div.section {
 <script type="text/javascript" src="../../library/dialog.js"></script>
 <script type="text/javascript" src="../../library/textformat.js"></script>
 <script type="text/javascript" src="../../library/dynarch_calendar.js"></script>
-<script type="text/javascript" src="../../library/dynarch_calendar_en.js"></script>
+<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
 <script type="text/javascript" src="../../library/dynarch_calendar_setup.js"></script>
 <script type="text/javascript" src="../../library/js/jquery-1.2.2.min.js"></script>
 
@@ -619,7 +619,7 @@ foreach ($categories as $catkey => $catname) {
        <td>
         <?php
          // Added 6/2009 by BM to incorporate the patient notes into the list_options listings
-         generate_form_field(array('data_type'=>1,'field_id'=>'note_type','list_id'=>'note_type','empty_title'=>'SKIP'));
+         generate_form_field(array('data_type'=>1,'field_id'=>'note_type','list_id'=>'note_type','empty_title'=>'SKIP'), '');
         ?>
        </td>
       </tr>

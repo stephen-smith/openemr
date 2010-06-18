@@ -1,5 +1,6 @@
 <?php
 include_once(dirname(__FILE__) . '/sql.inc'); // fixes vulnerability with register_globals
+require_once(dirname(__FILE__) . '/formdata.inc.php');
 
 // Translation function
 // This is the translation engine
@@ -28,11 +29,16 @@ function xl($constant,$mode='r',$prepend='',$append='') {
     $sql="SELECT * FROM lang_definitions JOIN lang_constants ON " .
       "lang_definitions.cons_id = lang_constants.cons_id WHERE " .
       "lang_id='$lang_id' AND constant_name = '" .
-      addslashes($constant) . "' LIMIT 1";
+      add_escape_custom($constant) . "' LIMIT 1";
     $res = SqlStatement($sql);
     $row = SqlFetchArray($res);
     $string = $row['definition'];
     if ($string == '') { $string = "$constant"; }
+    
+    // remove dangerous characters
+    $patterns = array ('/\n/','/\r/','/"/',"/'/");
+    $replace = array (' ','','`','`');
+    $string = preg_replace($patterns, $replace, $string);
   }
     
   $string = "$prepend" . "$string" . "$append";

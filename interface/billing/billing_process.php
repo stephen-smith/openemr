@@ -21,6 +21,7 @@ $bat_type     = ''; // will be edi or hcfa
 $bat_sendid   = '';
 $bat_recvid   = '';
 $bat_content  = '';
+$bat_gscount  = 0;
 $bat_stcount  = 0;
 $bat_time     = time();
 $bat_hhmm     = date('Hi' , $bat_time);
@@ -39,7 +40,7 @@ if (isset($_POST['bn_process_hcfa'])) {
 
 function append_claim(&$segs) {
   global $bat_content, $bat_sendid, $bat_recvid, $bat_sender, $bat_stcount;
-  global $bat_yymmdd, $bat_yyyymmdd, $bat_hhmm, $bat_icn;
+  global $bat_gscount, $bat_yymmdd, $bat_yyyymmdd, $bat_hhmm, $bat_icn;
 
   foreach ($segs as $seg) {
     if (!$seg) continue;
@@ -59,8 +60,11 @@ function append_claim(&$segs) {
         "found '" . htmlentities($elems[0]) . "' instead");
     }
     if ($elems[0] == 'GS') {
-      $bat_content .= "GS*HC*" . $elems[2] . "*" . $elems[3] .
-        "*$bat_yyyymmdd*$bat_hhmm*1*X*004010X098A1~";
+      if ($bat_gscount == 0) {
+        ++$bat_gscount;
+        $bat_content .= "GS*HC*" . $elems[2] . "*" . $elems[3] .
+          "*$bat_yyyymmdd*$bat_hhmm*1*X*004010X098A1~";
+      }
       continue;
     }
     if ($elems[0] == 'ST') {
@@ -78,8 +82,9 @@ function append_claim(&$segs) {
 }
 
 function append_claim_close() {
-  global $bat_content, $bat_stcount, $bat_icn;
-  $bat_content .= "GE*$bat_stcount*1~IEA*1*$bat_icn~";
+  global $bat_content, $bat_stcount, $bat_gscount, $bat_icn;
+  if ($bat_gscount) $bat_content .= "GE*$bat_stcount*1~";
+  $bat_content .= "IEA*$bat_gscount*$bat_icn~";
 }
 
 function send_batch() {
@@ -106,7 +111,7 @@ process_form($_POST);
 function process_form($ar) {
   global $bill_info, $webserver_root, $bat_filename, $pdf;
 
-  if (isset($ar['bn_x12']) || isset($ar['bn_x12_encounter']) || isset($ar['bn_process_hcfa'])) {
+  if (isset($ar['bn_x12']) || isset($ar['bn_x12_encounter']) || isset($ar['bn_process_hcfa']) || isset($ar['bn_hcfa_txt_file'])) {
     $hlog = fopen("$webserver_root/library/freeb/process_bills.log", 'w');
   }
 
@@ -150,7 +155,7 @@ function process_form($ar) {
 
       if (isset($ar['bn_x12']) || isset($ar['bn_x12_encounter'])) {
         $tmp = updateClaim(true, $patient_id, $encounter, $payer_id, $payer_type, 1, 1, '', $target, $claim_array['partner']);
-      } else if (isset($ar['bn_process_hcfa'])) {
+      } else if (isset($ar['bn_process_hcfa']) || isset($ar['bn_hcfa_txt_file'])) {
         $tmp = updateClaim(true, $patient_id, $encounter, $payer_id, $payer_type, 1, 1, '', 'hcfa');
       } else if (isset($ar['bn_mark'])) {
         // $sql .= " billed = 1, ";
@@ -201,6 +206,16 @@ function process_form($ar) {
           }
         }
 
+        else if (isset($ar['bn_hcfa_txt_file'])) {
+          $log = '';
+          $lines = gen_hcfa_1500($patient_id, $encounter, $log);
+          fwrite($hlog, $log);
+          $bat_content .= $lines;
+          if (!updateClaim(false, $patient_id, $encounter, -1, -1, 2, 2, $bat_filename)) {
+            $bill_info[] = xl("Internal error: claim ") . $claimid . xl(" not found!") . "\n";
+          }
+        }
+
         else {
           $bill_info[] = xl("Claim ") . $claimid . xl(" was queued successfully.") . "\n";
         }
@@ -228,6 +243,24 @@ function process_form($ar) {
     }
     // Send the PDF download.
     $pdf->ezStream(array('Content-Disposition' => $bat_filename));
+    exit;
+  }
+
+  if (isset($ar['bn_hcfa_txt_file'])) {
+    fclose($hlog);
+    $fh = @fopen("$webserver_root/edi/$bat_filename", 'a');
+    if ($fh) {
+      fwrite($fh, $bat_content);
+      fclose($fh);
+    }
+    header("Pragma: public");
+    header("Expires: 0");
+    header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+    header("Content-Type: application/force-download");
+    header("Content-Disposition: attachment; filename=$bat_filename");
+    header("Content-Description: File Transfer");
+    header("Content-Length: " . strlen($bat_content));
+    echo $bat_content;
     exit;
   }
 

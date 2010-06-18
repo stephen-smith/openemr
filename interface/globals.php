@@ -100,13 +100,25 @@ $GLOBALS['login_screen'] = "$rootdir/login_screen.php";
 $GLOBALS['mysql_bin_dir_win'] = "C:/xampp/mysql/bin";
 $GLOBALS['perl_bin_dir_win'] = "C:/xampp/perl/bin";
 $GLOBALS['temporary_files_dir_win'] = "C:/windows/temp";
+$GLOBALS['backup_log_dir_win']="C:/windows/temp"; // Event log backup directory
 //
 // LINUX (non-Windows) Specific Settings
 $GLOBALS['mysql_bin_dir_linux'] = "/usr/bin";
 $GLOBALS['perl_bin_dir_linux'] = "/usr/bin";
 $GLOBALS['temporary_files_dir_linux'] = "/tmp";
+$GLOBALS['backup_log_dir_linux']="/tmp"; // Event log backup directory
 //
+
 //
+// Print command for spooling to printers, used by statements.inc.php
+// This is the command to be used for printing (without the filename).
+// The word following "-P" should be the name of your printer.  This
+// example is designed for 8.5x11-inch paper with 1-inch margins,
+// 10 CPI, 6 LPI, 65 columns, 54 lines per page.
+//
+// IF lpr services are installed on Windows this setting will be similar
+// Otherwise configure it as needed (print /d:PRN) might be an option for Windows parallel printers
+$GLOBALS['print_command'] = "lpr -P HPLaserjet6P -o cpi=10 -o lpi=6 -o page-left=72 -o page-top=72";
 
 //
 // Language Translations Control Section
@@ -116,7 +128,8 @@ $GLOBALS['temporary_files_dir_linux'] = "/tmp";
 //   Arabic                         // xl('Arabic')
 //   Armenian                       // xl('Armenian')
 //   Bahasa Indonesia               // xl('Bahasa Indonesia')
-//   Chinese                        // xl('Chinese')
+//   Chinese (Simplified)           // xl('Chinese (Simplified)')
+//   Chinese (Traditional)          // xl('Chinese (Traditional)')
 //   Dutch                          // xl('Dutch')
 //   English (Indian)               // xl('English (Indian)')
 //   English (Standard)             // xl('English (Standard)')
@@ -197,6 +210,9 @@ $GLOBALS['translate_appt_categories'] = true;
 //  open the openemr mysql connection.
 include_once (dirname(__FILE__) . "/../library/translation.inc.php");
 
+// Includes functions for date internationalization
+include_once (dirname(__FILE__) . "/../library/date_functions.php");
+
 //
 // Lists and Layouts Control Section
 //
@@ -252,9 +268,6 @@ $GLOBALS['default_top_pane'] = 'main_info.php';
 // the link entirely by simple commenting out below line.
 $GLOBALS['online_support_link'] = 'http://sourceforge.net/projects/openemr/support';
 
-include_once (dirname(__FILE__) . "/../library/date_functions.php");
-include_once (dirname(__FILE__) . "/../library/classes/Filtreatment_class.php");
-
 // Default category for find_patient screen
 $GLOBALS['default_category'] = 5;
 $GLOBALS['default_event_title'] = 'Office Visit';
@@ -287,11 +300,6 @@ $GLOBALS['restore_sessions'] = 1; // 0=no, 1=yes, 2=yes+debug
 
 // used in Add new event for multiple providers
 $GLOBALS['select_multi_providers'] = false;
-
-// NOT functional. Always keep this value FALSE.
-//  Plan to remove when this functionally has been completely
-//   removed from code.
-$GLOBALS['dutchpc'] = FALSE;
 
 // Theme definition:
 if ($GLOBALS['concurrent_layout']) {
@@ -347,8 +355,8 @@ else {
 
 //Version tags
 
-$v_major = '3';
-$v_minor = '3';
+$v_major = '4';
+$v_minor = '0';
 $v_patch = '0';
 $tag = '-dev'; // minor revision number, should be empty for production releases
 
@@ -374,6 +382,52 @@ $GLOBALS['schedule_end'] = 17;
 // This is the time granularity of the calendar and the smallest interval
 // in minutes for an appointment slot:
 $GLOBALS['calendar_interval'] = 15;
+
+/*
+ Set 1 to enable strong password feature in openemr
+ Set 0 to disable strong password feature in openemr
+ Strong password means the user password must be at least 8 characters, and should contain at least three of the four following items:
+ -A number
+ -A lowercase letter
+ -An uppercase letter
+ -A special character (not a letter or number).
+ For example: healthCare@09
+*/
+$GLOBALS['secure_password'] = 0;
+
+//Set 1 to enable password history feature in openemr
+//Set 0 to disable password history feature in openemr
+//Password History means last three passwords of user should not be allowed while changing the password
+$GLOBALS['password_history'] = 0;
+
+// Set the default password expiration period, in days. if it is 0 this feature is disabled. 
+// The administrator can override this value when editing a user.
+// Set the grace login period in days, only when $GLOBALS['password_expiration_days'] is set to some values(like 180 days).
+$GLOBALS['password_expiration_days'] = 0;
+
+// Set the grace login period where the user can login with an expired password.
+$GLOBALS['password_grace_time'] = 0;
+
+//path to Certificate Authority crt file. Set this to full absolute path.
+//Used for creating client SSL certificates for https connections.
+$GLOBALS['certificate_authority_crt'] = "";
+
+//path to Certificate Authority key file. Set this to full absolute path.
+//Used for creating client SSL certificates for https connections.
+$GLOBALS['certificate_authority_key'] = "";
+
+//Enable or Disable client SSL Certificate Authentication
+$GLOBALS['is_client_ssl_enabled'] = false;
+
+//Default validity for Client certificate
+$GLOBALS['client_certificate_valid_in_days'] = "365";
+
+//Set 1 to send email message to given id for Emergency Login user activation.
+//Default value is 0.
+$GLOBALS['Emergency_Login_email'] = 0;
+
+//Set the admin email id
+$GLOBALS['Emergency_Login_email_id'] = "";
 
 // Include the authentication module code here, but the rule is
 // if the file has the word "login" in the source code file name,
@@ -470,10 +524,16 @@ $GLOBALS['discount_by_money'] = false;
 // patient notes created by others.
 $GLOBALS['ignore_pnotes_authorization'] = true;
 
-// This turns on the option of creating a new patient using the complete
-// layout of the demographics form as well as a built-in search feature.
-// Everyone should want this, but for now it's optional.
-$GLOBALS['full_new_patient_form'] = true;
+// This controls the style of the "new patient" form and its search and
+// duplication check features.  Options are:
+// 0 = Old-style static form without search or duplication check
+// 1 = All demographics fields, with search and duplication check
+// 2 = Mandatory fields only, with search and duplication check
+$GLOBALS['full_new_patient_form'] = 1;
+
+// This is the background color to apply to form fields that are searchable.
+// Currently it is applicable only to the "Search or Add Patient" form.
+$GLOBALS['layout_search_color'] = '#ffff55';
 
 // This can be used to enable the old Charges panel for entering billing
 // codes and payments.  It is not recommended, as it was obsoleted by the
@@ -493,6 +553,37 @@ $GLOBALS['restrict_user_facility'] = false;
 //
 // Set a facility cookie, so browser keeps a default selected facility between logins.
 $GLOBALS['set_facility_cookie'] = false;
+
+// Control the display of Advance Directives in demographics page
+$GLOBALS['advance_directives_warning'] = true;
+
+// Make this true to add options for configuration export and import to the
+// Backup page.
+$GLOBALS['configuration_import_export'] = false;
+
+// Style for patient search results.  0 = with encounter statistics, 1 = alternate.
+$GLOBALS['patient_search_results_style'] = 0;
+
+//EMAIL SETTINGS
+// EMAIL METHOD (PHPMAIL, SMTP, SENDMAIL)
+$EMAIL_METHOD = "SMTP";
+// HTML CHARSET
+$HTML_CHARSET = "UTF-8";
+// SMTP SETTINGS
+$SMTP_Auth = true;
+$SMTP_HOST = "";
+$SMTP_PORT = 25;
+$SMTP_USER = "";
+$SMTP_PASS = "";
+
+//settings for cronjob of the sms/email module
+// SEND SMS NOTIFICATION BEFORE HH HOUR
+$SMS_NOTIFICATION_HOUR = 50;
+// SEND EMAIL NOTIFICATION BEFORE HH HOUR
+$EMAIL_NOTIFICATION_HOUR = 50;
+$SMS_GATEWAY_USENAME     = 'SMS_GATEWAY_USENAME';
+$SMS_GATEWAY_PASSWORD    = 'SMS_GATEWAY_PASSWORD';
+$SMS_GATEWAY_APIKEY      = 'SMS_GATEWAY_APIKEY';
 
 // If you want Hylafax support then uncomment and customize the following
 // statements, and also customize custom/faxcover.txt:
@@ -517,6 +608,38 @@ $sl_services_id = 'MS';         // sql-ledger parts table id for medical service
 $sl_dbname      = 'sql-ledger'; // sql-ledger database name
 $sl_dbuser      = 'sql-ledger'; // sql-ledger database login name
 $sl_dbpass      = 'secret';     // sql-ledger database login password
+
+///////////////////////// AUDIT LOGGING CONFIG ////////////////
+//$GLOBALS["enable_auditlog"]=0 is to off the logging feature in openemr
+//$GLOBALS["enable_auditlog"]=1 is to on the logging feature in openemr
+//patient-record:- set 1 (0 to off) to log the patient related activites like creation of new patient, encounters, history//etc.
+//scheduling:- set 1 (0 to off) to log the patient related scheduling like Appointments.
+//query:- set 1 (0 to off) to log all SQL SELECT queries.
+//order:- set 1 (0 to off) to log an orders like medical service or medical item (like a prescription).
+//security-administration:- set 1 to (0 to off) to log events such as creating/updating users/facility etc.
+//backup:- set 1 (0 to off) to log backup related activites.
+
+//Turning off Auditing. It is currently broken due to the conflicts with LAST_INSERT_ID
+$GLOBALS["enable_auditlog"]=0;
+$GLOBALS["audit_events"]=array("patient-record"=>1,
+                                "scheduling"=>1,
+                                "query"=>0,
+                                "order"=>1,
+                                "security-administration"=>1,
+                                "backup"=>1,
+                                );
+
+// Configure the settings below to enable Audit Trail and Node Authentication (ATNA).
+// See RFC 3881, RFC 5424, RFC 5425 for details.
+// atna_audit_host = The hostname of the audit repository machine
+// atna_audit_port = Listening port of the RFC 5425 TLS syslog server
+// atna_audit_localcert - Certificate to send to RFC 5425 TLS syslog server
+// atna_audit_cacert - CA Certificate for verifying the RFC 5425 TLS syslog server
+$GLOBALS['atna_audit_host'] = '';
+$GLOBALS['atna_audit_port'] = 6514;
+$GLOBALS['atna_audit_localcert'] = '';
+$GLOBALS['atna_audit_cacert'] = '';
+//////////////////////////////////////////////////////////////////
 
 // Don't change anything below this line. ////////////////////////////
 
@@ -544,6 +667,7 @@ function strterm($string,$length) {
 // OS specific configuration (do not modify this)
 $GLOBALS['mysql_bin_dir'] = IS_WINDOWS ? $GLOBALS['mysql_bin_dir_win'] : $GLOBALS['mysql_bin_dir_linux'];
 $GLOBALS['perl_bin_dir'] = IS_WINDOWS ? $GLOBALS['perl_bin_dir_win'] : $GLOBALS['perl_bin_dir_linux'];
+$GLOBALS['backup_log_dir'] = IS_WINDOWS ?  $GLOBALS['backup_log_dir_win'] : $GLOBALS['backup_log_dir_linux'];
 if (version_compare(phpversion(), "5.2.1", ">=")) {
  $GLOBALS['temporary_files_dir'] = rtrim(sys_get_temp_dir(),'/'); // only works in PHP >= 5.2.1
 }
@@ -554,12 +678,5 @@ else {
 // turn off PHP compatibility warnings
 ini_set("session.bug_compat_warn","off");
 
-//settings for cronjob
-// SEND SMS NOTIFICATION BEFORE HH HOUR
-$SMS_NOTIFICATION_HOUR = 50;
-// SEND EMAIL NOTIFICATION BEFORE HH HOUR
-$EMAIL_NOTIFICATION_HOUR = 50;
-$SMS_GATEWAY_USENAME     = 'SMS_GATEWAY_USENAME';
-$SMS_GATEWAY_PASSWORD    = 'SMS_GATEWAY_PASSWORD';
-$SMS_GATEWAY_APIKEY      = 'SMS_GATEWAY_APIKEY';
+//////////////////////////////////////////////////////////////////
 ?>
