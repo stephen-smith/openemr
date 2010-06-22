@@ -20,6 +20,9 @@ a {
 a:visited { color: #0000cc; }
 a:hover { color: #A28268; text-decoration: underline; }
 
+td.line-header, th.line-header {
+	white-space: nowrap;
+}
 
 /*=============================================================
  * The top-menu in the old style, non-concurrent, layout where
