@@ -84,7 +84,7 @@
     }
 }
 </style>
-<title><?xl('Cash Receipts by Provider','e')?></title>
+<title><?php xl('Cash Receipts by Provider','e')?></title>
 </head>
 
 <body class="body_top">
@@ -185,8 +185,8 @@
 			</td>
 
 			<td>
-			   <input type='checkbox' name='form_details' value='1'<?php if ($_POST['form_details']) echo " checked"; ?>><?xl('Details','e')?>
-			   <input type='checkbox' name='form_procedures' value='1'<?php if ($form_procedures) echo " checked"; ?>><?xl('Procedures','e')?>
+			   <input type='checkbox' name='form_details' value='1'<?php if ($_POST['form_details']) echo " checked"; ?>><?php xl('Details','e')?>
+			   <input type='checkbox' name='form_procedures' value='1'<?php if ($form_procedures) echo " checked"; ?>><?php xl('Procedures','e')?>
 			</td>
 		</tr>
 	</table>
@@ -666,7 +666,7 @@
 
  <tr bgcolor="#ddddff">
   <td class="detail" colspan="<?php echo ($form_cptcode ? 4 : 2) + ($form_procedures ? 2 : 0); ?>">
-   <?echo xl('Totals for ') . $docname ?>
+   <?php echo xl('Totals for ') . $docname ?>
   </td>
   <td align="right">
    <?php bucks($doctotal1) ?>

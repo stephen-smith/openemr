@@ -175,7 +175,7 @@ else { // not export
   }
   echo "   </select>\n";
 ?>
-   &nbsp;<?xl('From:','e')?>
+   &nbsp;<?php xl('From:','e')?>
    <input type='text' name='form_from_date' id="form_from_date" size='10' value='<?php echo $form_from_date ?>'
     onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' title='yyyy-mm-dd'>
    <img src='../pic/show_calendar.gif' align='absbottom' width='24' height='22'

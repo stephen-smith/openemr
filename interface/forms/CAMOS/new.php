@@ -227,7 +227,7 @@ elseif ($_POST['hidden_mode'] == 'alter') {
 ?>
 
 <html><head>
-<link rel=stylesheet href="<?echo $css_header;?>" type="text/css">
+<link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 
 <script language="javascript" type="text/javascript"> 
 
@@ -1067,9 +1067,9 @@ function processEnter(e,message) {
 
 </script>
 </head>
-<body <?echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0 onload="init()">
+<body <?php echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0 onload="init()">
 <div name="form_container" onKeyPress="gotoOne(event)">
-<form method=post action="<?echo $rootdir;?>/forms/CAMOS/save.php?mode=new" name="CAMOS">
+<form method=post action="<?php echo $rootdir;?>/forms/CAMOS/save.php?mode=new" name="CAMOS">
 <?php
 if (!$out_of_encounter) {
 //	echo "<h1>$out_of_encounter</h1>\n";

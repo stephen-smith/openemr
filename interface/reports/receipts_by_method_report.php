@@ -202,7 +202,7 @@ $form_cptcode   = trim($_POST['form_cptcode']);
     }
 }
 </style>
-<title><?xl('Receipts Summary','e')?></title>
+<title><?php xl('Receipts Summary','e')?></title>
 </head>
 
 <body class="body_top">
@@ -247,7 +247,7 @@ $form_cptcode   = trim($_POST['form_cptcode']);
 			   <input type='text' name='form_cptcode' size='5' value='<?php echo $form_cptcode; ?>'
 				title='<?php xl('Optional procedure code','e'); ?>'
 				<?php if ($GLOBALS['simplified_demographics']) echo "style='display:none'"; ?> />
-			   &nbsp;<input type='checkbox' name='form_details' value='1'<?php if ($_POST['form_details']) echo " checked"; ?> /><?xl('Details','e')?>
+			   &nbsp;<input type='checkbox' name='form_details' value='1'<?php if ($_POST['form_details']) echo " checked"; ?> /><?php xl('Details','e')?>
 			</td>
 		</tr>
 		<tr>
@@ -318,33 +318,33 @@ $form_cptcode   = trim($_POST['form_cptcode']);
 
  <thead>
   <th>
-   <?xl('Method','e')?>
+   <?php xl('Method','e')?>
   </th>
   <th>
-   <?xl('Date','e')?>
+   <?php xl('Date','e')?>
   </th>
   <th>
-   <?xl('Invoice','e')?>
+   <?php xl('Invoice','e')?>
   </th>
 <?php if ($showing_ppd) { ?>
   <th>
-   <?xl('Patient','e')?>
+   <?php xl('Patient','e')?>
   </th>
   <th>
-   <?xl('Policy','e')?>
+   <?php xl('Policy','e')?>
   </th>
   <th>
-   <?xl('DOS','e')?>
+   <?php xl('DOS','e')?>
   </th>
 <?php } ?>
   <th>
-   <?xl('Procedure','e')?>
+   <?php xl('Procedure','e')?>
   </th>
   <th align="right">
-   <?xl('Adjustments','e')?>
+   <?php xl('Adjustments','e')?>
   </th>
   <th align="right">
-   <?xl('Payments','e')?>
+   <?php xl('Payments','e')?>
   </th>
  </thead>
 <?php
@@ -573,7 +573,7 @@ if ($_POST['form_refresh']) {
 ?>
  <tr bgcolor="#ddddff">
   <td class="detail" colspan="<?php echo $showing_ppd ? 7 : 4; ?>">
-   <?echo xl('Total for ') . $paymethod ?>
+   <?php echo xl('Total for ') . $paymethod ?>
   </td>
   <td align="right">
    <?php bucks($methodadjtotal) ?>

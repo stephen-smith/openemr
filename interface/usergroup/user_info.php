@@ -121,7 +121,7 @@ if ($update_pwd_failed==1) //display message if entered password matched one of 
 <TD><input type=password name=clearPass size=20 value=""></td>
 </TR>
 <TR>
-<TD><span class=text><?php xl('Password','e'); ?> (<?xl('Again','e');?>): </span></TD>
+<TD><span class=text><?php xl('Password','e'); ?> (<?php xl('Again','e');?>): </span></TD>
 <TD><input type=password name=clearPass2 size=20 value=""></td>
 </TR>
 

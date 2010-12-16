@@ -23,7 +23,7 @@
 <html>
 <head>
 <?php html_header_show();?>
-<link rel=stylesheet href="<?echo $css_header;?>" type="text/css">
+<link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 </head>
 
 <body bgcolor="#ffffff" topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0>
@@ -63,8 +63,8 @@
 <?php echo $facility['phone']?><br>
 </p>
 
-<a href="javascript:window.close();"><font class=title><?print $titleres{"fname"} . " " . $titleres{"lname"};?></font></a><br>
-<span class=text><?php xl('Generated on','e'); ?>: <?print date("Y-m-d");?></span>
+<a href="javascript:window.close();"><font class=title><?php print $titleres{"fname"} . " " . $titleres{"lname"};?></font></a><br>
+<span class=text><?php xl('Generated on','e'); ?>: <?php print date("Y-m-d");?></span>
 <br><br>
 
 <?php
