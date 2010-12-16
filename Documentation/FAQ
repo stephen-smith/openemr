@@ -13,10 +13,15 @@ It should be set to the absolute path of the openemr web directory, as shown abo
 
 PHP can be called from within Apache with either long tags: <?php or short tags: <? 
 OpenEMR uses short tags throughout its program code, though some default installations have short tags disabled. If you see this error, short tags are not enabled. Please consult PHP's documentation at: http://www.zend.com/manual/language.basic-syntax.php. The solution is to enable the short_open_tag configuration flag in the PHP config file, or by compiling PHP with the --enable-short-tags option to configure. (Zend PHP Website)
-
+The use of short tags is now generally considered bad practice[1][2][3][4], and the OpenEMR project would appreciate any patches that removes the existing uses of short tags, or helps prevent new uses of short tags from entering the tree.
 
 * How do I implement my own encounter forms into OpenEMR?
 
 The encounter form system and API is intended to support a wide variety of diverse encounter forms. To create your own encounter forms, you have two options: you can implement them manually yourself, or you can contract PennFirm do generate them for you. If you would like PennFirm to generate forms for you, please email info@openemr.net, and you will be given a fax number to which all forms may be sent. PennFirm will create your forms, including layout, reporting, etc. and email them to you within 1 week.
 
 If you would like to make forms yourself, please begin by taking a look at the existing forms that come with the default installation of OpenEMR. The Documentation/3rd Party Form API.txt document details the user-level functions available for form developers. While implementing your own forms, please remember that compatibility with the rest of the OpenEMR platform is crucial, for correct report generation and smooth functionality.
+
+[1] http://www.php.net/manual/en/language.basic-syntax.phpmode.php
+[2] http://codeadict.wordpress.com/2009/11/11/php-short-tags-a-bad-practice/
+[3] http://w3mentor.com/learn/php-mysql-tutorials/php-language-basics/common-coding-mistakes-php-short-open-tags/
+[4] http://webdosanddonts.com/fundamental-php-coding-dos-donts
