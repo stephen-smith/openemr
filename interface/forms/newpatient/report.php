@@ -1,4 +1,4 @@
-<?
+<?php
 include_once(dirname(__file__)."/../../globals.php");
 
 function newpatient_report( $pid, $encounter, $cols, $id) {

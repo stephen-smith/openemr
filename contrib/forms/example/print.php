@@ -1,4 +1,4 @@
-<?
+<?php
 include("../../../library/api.inc");
 //formHeader("View my form");
 //todaye we decide not to use the recommended header

@@ -137,7 +137,7 @@ function thisLineItem($patient_id, $encounter_id, $rowcat, $description, $transd
    <?php bucks($rowamount); ?>
   </td>
  </tr>
-<?
+<?php
     } // End not csv export
   } // end details
   $producttotal += $rowamount;
@@ -465,7 +465,7 @@ function thisLineItem($patient_id, $encounter_id, $rowcat, $description, $transd
   </td>
  </tr>
 
-<?
+<?php
     } // End not csv export
   }
   if (!$INTEGRATED_AR) SLClose();

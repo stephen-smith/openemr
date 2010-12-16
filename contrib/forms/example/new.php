@@ -1,4 +1,4 @@
-<?
+<?php
 include("../../../library/api.inc");
 //use the suggested header
 formHeader("newerpatient form");

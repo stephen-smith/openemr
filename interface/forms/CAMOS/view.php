@@ -85,6 +85,6 @@ while ($result = sqlFetchArray($statement)) {
 //experimental code end
 ?>
 </form>
-<?
+<?php
 formFooter();
 ?>

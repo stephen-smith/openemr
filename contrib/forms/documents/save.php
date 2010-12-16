@@ -1,4 +1,4 @@
-<?
+<?php
 # file save.php.
 # uploads what comes from the new.php file.
 # the use of modifying inserted values is depreciated.

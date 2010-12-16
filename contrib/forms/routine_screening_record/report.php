@@ -1,4 +1,4 @@
-<? function routine_screening_record_report( $pid, $encounter, $cols, $id) {
+<?php function routine_screening_record_report( $pid, $encounter, $cols, $id) {
 include_once("../../globals.php");
 include_once("$srcdir/api.inc");
 include_once("$srcdir/forms.inc");
@@ -16,9 +16,9 @@ include_once("$srcdir/calendar.inc");formHeader("Form: Routine screening record"
 <div style="border: solid 2px black; background-color:#FFFFFF;">
   <table  border="0" cellpadding="2" cellspacing="0">
     <tr align="left" valign="bottom">
-      <td colspan="4" class="fibody2" id="bordR">Patient name: <?  echo $patient{'fname'}.' '.$patient{'mname'}.' '.$patient{'lname'}; ?></td>
-      <td colspan="4" class="fibody2" id="bordR">Birth date: <?   echo $patient{'DOB'};  ?></td>
-      <td colspan="3" class="fibody2">ID No: <?    echo $patient{'id'};   ?></td>
+      <td colspan="4" class="fibody2" id="bordR">Patient name: <?php  echo $patient{'fname'}.' '.$patient{'mname'}.' '.$patient{'lname'}; ?></td>
+      <td colspan="4" class="fibody2" id="bordR">Birth date: <?php   echo $patient{'DOB'};  ?></td>
+      <td colspan="3" class="fibody2">ID No: <?php    echo $patient{'id'};   ?></td>
     </tr>
     <tr align="center" valign="middle">
       <td class="ficaption2" id="bordR">age</td>
@@ -138,7 +138,7 @@ UNDER AGE 25</td>
     <tr align="left" valign="bottom">
       <td colspan="11" class="fibody2" style="border-bottom: 2px solid black;">&nbsp;</td>
     </tr>
-<?	
+<?php	
 $factors = array("cervical", "lipid", "mammo", "colorectal",
 "bone", "chlamyd", "gonor", "urinal", "glucose", "thyroid");
 $rsi = 1;
@@ -190,4 +190,4 @@ $rsi++;
   </table>
 </div>
 <p><sup>*</sup>This test may be appropriate for other patients based on risk (see High-Risk Laboratory Record and Table of High-Risk Factors)</p>
-<? } ?>
+<?php } ?>

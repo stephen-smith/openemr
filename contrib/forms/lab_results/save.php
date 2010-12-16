@@ -1,4 +1,4 @@
-<?
+<?php
 # file save.php.
 
 include_once("../../globals.php");

@@ -103,7 +103,7 @@ function thisLineItem($patient_id, $encounter_id, $description, $transdate, $qty
    <?php echo formatcyp($rowresult); ?>
   </td>
  </tr>
-<?
+<?php
     } // End not csv export
   } // end details
   $producttotal += $rowresult;
@@ -329,7 +329,7 @@ if ($_POST['form_refresh'] || $_POST['form_csvexport']) {
   </td>
  </tr>
 
-<?
+<?php
   } // End not csv export
 } // end report generation
 
