@@ -1,5 +1,8 @@
 <?php
-require_once ($GLOBALS['fileroot'] . "/library/classes/ORDataObject.class.php");
+
+/* For the class we're extending. */
+require_once ($GLOBALS['srcdir'] . '/classes/ORDataObject.class.php');
+
 abstract class AbstractClickmapModel extends ORDataObject {
     /**
      *
