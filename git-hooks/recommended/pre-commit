@@ -1,0 +1,19 @@
+#!/bin/sh
+
+php_lint_errors=$({
+	find . -type f \( -name '*.php' -o -name '*.php[45]' \) \
+		-exec php -l {} \; \
+	| grep -v '^No syntax errors detected in ';
+} 2>/dev/null)
+
+if ! [ -z "$php_lint_errors" ]; then
+	printf >&2 '%s\n' "PHP's lint mode detected the following errors:" \
+		"$php_lint_errors" \
+		"Aborting commit due to PHP errors detected by PHP's lint" \
+		'mode in the working tree.' \
+		'Full error messages including affected filenames are' \
+		'reported above.'
+	exit 1
+fi
+
+exit 0
