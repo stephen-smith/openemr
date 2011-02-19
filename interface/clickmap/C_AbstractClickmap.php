@@ -1,11 +1,15 @@
 <?php
-require_once ($GLOBALS['fileroot'] . "/library/classes/Controller.class.php");
-require_once ($GLOBALS['fileroot'] . "/library/forms.inc");
+
+/* For the class we're extending. */
+require_once ($GLOBALS['srcdir'] . '/classes/Controller.class.php');
+/* FIXME: For ??? */
+require_once ($GLOBALS['srcdir'] . '/forms.inc');
 
 abstract class C_AbstractClickmap extends Controller {
 
     var $template_dir;
 
+    /* initialization */
     function C_AbstractClickmap($template_mod = "general") {
     	parent::Controller();
     	$returnurl = $GLOBALS['concurrent_layout'] ? 'encounter_top.php' : 'patient_encounter.php';
