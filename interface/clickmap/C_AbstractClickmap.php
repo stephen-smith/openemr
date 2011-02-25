@@ -33,7 +33,7 @@ abstract class C_AbstractClickmap extends Controller {
     	$returnurl = $GLOBALS['concurrent_layout'] ? 'encounter_top.php' : 'patient_encounter.php';
     	$this->template_mod = $template_mod;
     	$this->template_dir = $GLOBALS['fileroot'] . "/interface/clickmap/template/";
-    	$this->assign("FORM_ACTION", $GLOBALS['web_root']);
+    	$this->assign("FORM_ACTION", $GLOBALS['webroot']);
     	$this->assign("DONT_SAVE_LINK",$GLOBALS['webroot'] . "/interface/patient_file/encounter/$returnurl");
     	$this->assign("STYLE", $GLOBALS['style']);
     }
