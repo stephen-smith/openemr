@@ -11,10 +11,10 @@
 /* remember that include paths are calculated relative to the including script, not this file. */
 require_once('../../globals.php');
 
-/*  For Controller, the class we're extending. */
+/* For Controller, the class we're extending. */
 require_once ($GLOBALS['srcdir'] . '/classes/Controller.class.php');
 
-/* FIXME: For the forms API */
+/* For the addform()  function */
 require_once ($GLOBALS['srcdir'] . '/forms.inc');
 
 /**
@@ -25,7 +25,6 @@ require_once ($GLOBALS['srcdir'] . '/forms.inc');
  */
 abstract class C_AbstractClickmap extends Controller {
 
-    
     var $template_dir;
 
     /* initialization */
@@ -34,15 +33,15 @@ abstract class C_AbstractClickmap extends Controller {
     	$returnurl = $GLOBALS['concurrent_layout'] ? 'encounter_top.php' : 'patient_encounter.php';
     	$this->template_mod = $template_mod;
     	$this->template_dir = $GLOBALS['fileroot'] . "/interface/clickmap/template/";
-    	$this->assign("FORM_ACTION", $GLOBALS['webroot']);
     	$this->assign("DONT_SAVE_LINK",$GLOBALS['webroot'] . "/interface/patient_file/encounter/$returnurl");
+    	$this->assign("FORM_ACTION", $GLOBALS['webroot']);
     	$this->assign("STYLE", $GLOBALS['style']);
     }
 
     /**
-     * @breif Override this abstract function with your implementation of createModel
+     * @breif Override this abstract function with your implementation of createModel.
      * 
-     * @param $form_id 
+     * @param $form_id
      *  An optional id of a form, to populate data from.
      *
      * @return Model
@@ -53,22 +52,27 @@ abstract class C_AbstractClickmap extends Controller {
     /**
      * @breif Override this abstract function with your implememtation of getImage
      * 
-     * @return The path to the image backing this form relative to your form's 
-     *
+     * @return The path to the image backing this form relative to the webroot.
      */
     abstract function getImage();
 
     /**
-     * @breif Override this tabstract function o return the label of the optionlists on this form.
+     * @breif Override this abstract function to return the label of the optionlists on this form.
+     *
+     * @return The label used for all dropdown boxes on this form.
      */
     abstract function getOptionsLabel();
 
     /**
-     * Override this to return a hash of the optionlist (key=>value pairs).
-     * @return array
+     * @breif Override this abstract functon to return a hash of the optionlist (key=>value pairs).
+     *
+     * @return A hash of key=>value pairs, representing all the possible options in the dropdown boxes on this form.
      */
     abstract function getOptionList();
 
+    /**
+     * @breif set up the passed in Model object to model the form.
+     */
     private function set_context( $model ) {
         $root = $GLOBALS['webroot'] . "/interface/clickmap";
         $model->saveAction = $GLOBALS['webroot'] . "/interface/forms/" . $model->getCode() . "/save.php";
@@ -84,6 +88,11 @@ abstract class C_AbstractClickmap extends Controller {
         $model->hideNav = "false";
     }
 
+    /**
+     * @breif generate an html document from the 'new form' template
+     *
+     * @return the result of smarty's fetch() operation.
+     */
     function default_action() {
         $model = $this->createModel();
     	$this->assign("form", $model);
@@ -91,6 +100,14 @@ abstract class C_AbstractClickmap extends Controller {
         return $this->fetch($this->template_dir . $this->template_mod . "_new.html");
     }
 
+    /**
+     * @breif generate an html document from the 'new form' template, populated with form data from the passed in form_id.
+     *
+     * @param form_id
+     *  The id of the form to populate data from.
+     *
+     * @return the result of smarty's fetch() operation.
+     */
     function view_action($form_id) {
         $model = $this->createModel($form_id);
     	$this->assign("form",$model);
@@ -98,6 +115,14 @@ abstract class C_AbstractClickmap extends Controller {
     	return $this->fetch($this->template_dir . $this->template_mod . "_new.html");
     }
 
+    /**
+     * @breif generate a fragment of an HTML document from the 'new form' template, populated with form data from the passed in form_id.
+     *
+     * @param form_id
+     *  The id of the form to populate data from.
+     *
+     * @return the result of smarty's fetch() operation.
+     */
     function report_action($form_id) {
         $model = $this->createModel($form_id);
     	$this->assign("form",$model);
@@ -106,7 +131,10 @@ abstract class C_AbstractClickmap extends Controller {
     	return $this->fetch($this->template_dir . $this->template_mod . "_new.html");
     }
 
-    function default_action_process() {
+     /**
+     * @breif called to store the submitted form's contents to the database, adding the form to the encounter if necissary.
+     */
+   function default_action_process() {
         if ($_POST['process'] != "true") {
             return;
         }
