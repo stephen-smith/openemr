@@ -13,7 +13,7 @@ class C_FormWellInfant extends Controller {
     	parent::Controller();
     	$this->template_mod = $template_mod;
     	$this->template_dir = dirname(__FILE__) . "/templates/well_infant/";
-    	$this->assign("FORM_ACTION", $GLOBALS['web_root']);
+    	$this->assign("FORM_ACTION", $GLOBALS['webroot']);
     	$this->assign("DONT_SAVE_LINK", $GLOBALS['form_exit_url']);
     	$this->assign("STYLE", $GLOBALS['style']);
     }

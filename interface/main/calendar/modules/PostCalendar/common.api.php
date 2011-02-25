@@ -961,7 +961,7 @@ function postcalendar_userapi_buildSubmitForm($args,$admin=false)
     //=================================================================
 
 
-    $tpl->assign('webroot', $GLOBALS['web_root']);
+    $tpl->assign('webroot', $GLOBALS['webroot']);
     $tpl->assign_by_ref('TPL_NAME',$template_name);
     $tpl->assign('FUNCTION',pnVarCleanFromInput('func'));
     $tpl->assign_by_ref('ModuleName', $modname);
