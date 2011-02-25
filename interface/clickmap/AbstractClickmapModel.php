@@ -1,13 +1,18 @@
 <?php
 
-/* For the class we're extending. */
+/**
+ *  @breif The class we're extending.
+ */
 require_once ($GLOBALS['srcdir'] . '/classes/ORDataObject.class.php');
 
 /* FIXME: all of these set functions have a filter on them, and throw errors if the filter is not honoured. verify the necissity of these filters. */
 
-/* class AbstractClickmapModel
+/**
+ * @class AbstractClickmapModel
  *
- * A form object, with a click-and-write-anywhere UI. Inherits from OrDataObject.
+ * @breif A form object, with a click-and-select_from_dropdown UI.
+ *
+ * This class inherits from OrDataObject.
  *
  */
 abstract class AbstractClickmapModel extends ORDataObject {
@@ -22,9 +27,10 @@ abstract class AbstractClickmapModel extends ORDataObject {
     var $activity;
     var $data;
 
+    /**
     /* initialization */
     public function AbstractClickmapModel($table, $id="") {
-        /* Only accept numeric IDs as arguments. FIXME: why is this filter here? */
+        /* Only accept numeric IDs as arguments. */
         if (is_numeric($id)) {
             $this->id = $id;
         } else {
