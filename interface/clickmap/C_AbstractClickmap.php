@@ -8,7 +8,8 @@
  */
 
 /* for $GLOBALS['concurrent_layout','encounter','fileroot','pid','srcdir','style','webroot'] */
-require_once('../globals.php');
+/* remember that include paths are calculated relative to the including script, not this file. */
+require_once('../../globals.php');
 
 /*  For Controller, the class we're extending. */
 require_once ($GLOBALS['srcdir'] . '/classes/Controller.class.php');
