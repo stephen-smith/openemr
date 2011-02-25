@@ -1,12 +1,30 @@
 <?php
 
-/* For the class we're extending. */
+/**
+ * @file C_AbstractClickmap.php
+ *
+ * @breif This file contains the C_AbstractClickmap class.
+ *
+ */
+
+/* for $GLOBALS['concurrent_layout','encounter','fileroot','pid','srcdir','style','webroot'] */
+require_once('../globals.php');
+
+/*  For Controller, the class we're extending. */
 require_once ($GLOBALS['srcdir'] . '/classes/Controller.class.php');
-/* FIXME: For ??? */
+
+/* FIXME: For the forms API */
 require_once ($GLOBALS['srcdir'] . '/forms.inc');
 
+/**
+ * @class C_AbstractClickmap
+ *
+ * @breif This class extends the Controller class, which is used to control the smarty templating engine.
+ *
+ */
 abstract class C_AbstractClickmap extends Controller {
 
+    
     var $template_dir;
 
     /* initialization */
@@ -21,18 +39,26 @@ abstract class C_AbstractClickmap extends Controller {
     }
 
     /**
-     * Override this with your implementation of AbstractClickmapModel
-     * @return AbstractClickmapModel;
+     * @breif Override this abstract function with your implementation of createModel
+     * 
+     * @param $form_id 
+     *  An optional id of a form, to populate data from.
+     *
+     * @return Model
+     *  An AbstractClickmapModel derived Object.
      */
     abstract public function createModel($form_id="");
 
     /**
-     * Override this to return the path to your image relative to your form's the template
+     * @breif Override this abstract function with your implememtation of getImage
+     * 
+     * @return The path to the image backing this form relative to your form's 
+     *
      */
     abstract function getImage();
 
     /**
-     * Override this to return the label of your optionlist
+     * @breif Override this tabstract function o return the label of the optionlists on this form.
      */
     abstract function getOptionsLabel();
 
