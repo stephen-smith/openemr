@@ -3,7 +3,7 @@
 /**
  * @file C_AbstractClickmap.php
  *
- * @breif This file contains the C_AbstractClickmap class.
+ * @breif This file contains the C_AbstractClickmap class, used to control smarty.
  *
  */
 
@@ -14,7 +14,7 @@ require_once('../../globals.php');
 /* For Controller, the class we're extending. */
 require_once ($GLOBALS['srcdir'] . '/classes/Controller.class.php');
 
-/* For the addform()  function */
+/* For the addform() function */
 require_once ($GLOBALS['srcdir'] . '/forms.inc');
 
 /**
@@ -24,10 +24,19 @@ require_once ($GLOBALS['srcdir'] . '/forms.inc');
  *
  */
 abstract class C_AbstractClickmap extends Controller {
-
+    /**
+     * the directory to find our template file in.
+     *
+     * @var template_dir
+     */
     var $template_dir;
 
-    /* initialization */
+    /**
+     * @breif Initialize a newly created object belonging to this class
+     *
+     * @param template_mod
+     *  template module name, passed to Controller's initializer.
+     */
     function C_AbstractClickmap($template_mod = "general") {
     	parent::Controller();
     	$returnurl = $GLOBALS['concurrent_layout'] ? 'encounter_top.php' : 'patient_encounter.php';
