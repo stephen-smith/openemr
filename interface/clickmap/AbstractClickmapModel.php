@@ -1,34 +1,94 @@
 <?php
 
 /**
- *  @breif The class we're extending.
+ * @file AbstractClickmapModel.php
+ *
+ * @breif This file contains the AbstractClickmapModel class, used to model form contents.
+ *
  */
-require_once ($GLOBALS['srcdir'] . '/classes/ORDataObject.class.php');
 
-/* FIXME: all of these set functions have a filter on them, and throw errors if the filter is not honoured. verify the necissity of these filters. */
+/* for $GLOBALS['srcdir','pid'] */
+/* remember that include paths are calculated relative to the including script, not this file. */
+require_once('../../globals.php');
+
+/* for OrDataObject, the class we're extending. */
+require_once ($GLOBALS['srcdir'] . '/classes/ORDataObject.class.php');
 
 /**
  * @class AbstractClickmapModel
  *
- * @breif A form object, with a click-and-select_from_dropdown UI.
+ * @breif code This class extends the OrDataObject class, which is used to model form data for a smarty generated form.
  *
- * This class inherits from OrDataObject.
+ * This class extends the ORDataObject class, to model the contents of an image-based form.
  *
  */
 abstract class AbstractClickmapModel extends ORDataObject {
 
-    /* variables visible as members of this object. */
+    /**
+     * The row to persist information to/from.
+     *
+     * @var id
+     */
     var $id;
+    /**
+     *
+     * FIXME: either last modification date OR creation date?
+     *
+     * @var date
+     */
     var $date;
+    /**
+     *
+     * The unique identifier of the patient this form belongs to.
+     *
+     * @var pid
+     */
     var $pid;
+    /**
+     *
+     * required field in database table. not used, always defaulted to NULL.
+     *
+     * @var user
+     */
     var $user;
+    /**
+     *
+     * required field in database table. not used, always defaulted to NULL.
+     *
+     * @var groupname
+     */
     var $groupname;
+    /**
+     *
+     * required field in the database table. always defaulted to NULL.
+     *
+     * @var authorized
+     */
     var $authorized;
+    /**
+     *
+     * required field in the database table. always defaulted to NULL.
+     *
+     * @var activity
+     */
     var $activity;
+    /**
+     *
+     * The contents of our form, in one field.
+     *
+     * @var data
+     */
     var $data;
 
     /**
-    /* initialization */
+     * @breif Initialize a newly created object belonging to this class
+     *
+     * @param table
+     *  The sql table to persist form contents from/to.
+     *
+     * @param id
+     *  The index of a row in the given table to initialize form contents from.
+     */
     public function AbstractClickmapModel($table, $id="") {
         /* Only accept numeric IDs as arguments. */
         if (is_numeric($id)) {
@@ -46,21 +106,33 @@ abstract class AbstractClickmapModel extends ORDataObject {
         }
     }
 
-    /* FIXME: label here */
+    /**
+     * @breif Override this abstract function with your implementation of getTitle.
+     * 
+     * @return The title of this form.
+     */
     abstract function getTitle();
 
-    /* FIXME: label here */
+    /**
+     * @breif Override this abstract function with your implementation of getCode.
+     * 
+     * @return A string thats a 'code' for this form.
+     */
     abstract function getCode();
 
-    /* FIXME: label here */
+    /**
+     * @breif Fill in this object's members with the contents from the database representing the stored form.
+     */
     function populate() {
-        /* inherit from our parent */
+        /* Run our parent's implementation. */
         parent::populate();
     }
 
-    /* FIXME: label here */
+    /**
+     * @breif Store the current structure members representing the form into the database.
+     */
     function persist() {
-        /* inherit from our parent */
+        /* Run our parent's implementation. */
         parent::persist();
     }
 
