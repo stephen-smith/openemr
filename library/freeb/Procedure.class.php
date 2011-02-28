@@ -395,7 +395,7 @@ class Procedure Extends DataObjectBase {
 		$obj= $m->getparam(0);
 		$key = $obj->getval();
 
-		//phased out by HIPPA, use cpt modifiers instead
+		//phased out by HIPAA, use cpt modifiers instead
 		$retval = "";
 		// if we generated an error, create an error return response
 		if ($err) {
