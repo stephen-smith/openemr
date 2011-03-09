@@ -149,7 +149,7 @@ else
 <script type="text/javascript" src="../../../library/dynarch_calendar_en.js"></script>
 <script type="text/javascript" src="../../../library/dynarch_calendar_setup.js"></script>
 
-<script type="text/javascript" src="../../../library/js/jquery121.js"></script>
+<script type="text/javascript" src="../../../library/js/jquery.js"></script>
 
 <?php
 
