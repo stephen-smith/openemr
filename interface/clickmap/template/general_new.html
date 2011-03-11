@@ -25,7 +25,8 @@
 <div class="nav">
 	<button id="btn_save">Save</button>
 	<button id="btn_clear">Clear</button>
-	<p>Click 'Save' to persist current settings; 'Load' to restore saved settings; 'Clear' to remove current settings.</p>
+	<button id="cancel">Cancel</button>
+	<p>Click 'Save' to persist current settings; 'Load' to restore saved settings; 'Clear' to remove current settings; 'Cancel' to return to the previous page.</p>
 </div>
 
 <div class="dialog-form" style="display:none">
@@ -45,8 +46,10 @@
 </div>
 
 <script type="text/javascript">
+var cancellink = '{$DONT_SAVE_LINK}';
 {literal}
     $(document).ready( function() {
+                $("#cancel").click(function() { location.href=cancellink; });
 		var optionsLabel = {/literal}{$form->optionsLabel}{literal};
 		var options = {/literal}{$form->optionList}{literal};
 		var data = {/literal}{$form->data}{literal};
