@@ -4,8 +4,8 @@ var clickmap = function( args ) {
 	var counter = 0;
 
 	var fn_buildMarker = function( x, y, pos, annotation ) {
-		var legendItem = $("<li class='legend-item'><b>" + pos + "</b> " + annotation + "</li>");
-		$(".legend .body ul").append( legendItem );		    
+	    var legendItem = $("<li class='legend-item'><b>" + pos + "</b> " + decodeURIComponent(annotation) + "</li>");
+		$(".legend .body ul").append( legendItem );
 
 		var marker = $(".marker-template").clone();
 		    marker.attr("data-x", x).attr("data-y", y).attr("data-pos", pos).attr("id", new Date().getTime() ).attr("class", "marker")
@@ -13,7 +13,7 @@ var clickmap = function( args ) {
 			  .find("span.count").text( pos );
 		    marker.mouseenter( function() { f = true; } )
 			  .mouseleave( function() { f = false; } )
-		          .attr("title", annotation ? annotation : "" )
+	    .attr("title", annotation ? decodeURIComponent(annotation) : "" )
 			  .show()
 		   	  .click( function() { $(this).remove(); legendItem.remove(); f = false; } );
 		return marker;
@@ -30,11 +30,11 @@ var clickmap = function( args ) {
 	var fn_load = function( container, val ) {
 		fn_clear();
                 if ( !val ) return;
-		var coordinates = val.split("~");
+		var coordinates = val.split("}");
 		for ( var i = 0; i < coordinates.length; i++ ) {
 			var coordinate = coordinates[i];
 			if ( coordinate ) {
-				var info = coordinate.split("-"); 
+				var info = coordinate.split("^");
 				var x = info[0]; var y = info[1]; var label = info[2]; var detail = info[3]; 
 				var marker = fn_buildMarker( x, y, label, detail );
 				container.append(marker);
@@ -49,7 +49,7 @@ var clickmap = function( args ) {
 		var val = "";
 		$(".marker").each( function() {
 			var marker = $(this);
-			val += marker.attr("data-x") + "-" + marker.attr("data-y") + "-" + marker.attr("data-pos") + "-" + marker.attr("title") + "~";  
+			val += marker.attr("data-x") + "^" + marker.attr("data-y") + "^" + marker.attr("data-pos") + "^" + encodeURIComponent(marker.attr("title")) + "}";
 		});
 		$("#data").attr("value", val);
                 $("#submitForm").submit();
@@ -57,7 +57,7 @@ var clickmap = function( args ) {
 	
 
 	//// main
-	var dropdownOptions = args.dropdownOptions;		
+	var dropdownOptions = args.dropdownOptions;
 	var options = dropdownOptions.options;
 	var optionsLabel = dropdownOptions.label;
 	var container = args.container;
@@ -90,14 +90,14 @@ var clickmap = function( args ) {
                     var do_marker = function() {
                             if ( dialog.saved ) {
                                     var newcounter = dialog.find(".label").val();
-                                    var notes = dialog.find(".detail").val();
-                                    var selectedOption = dialog.find("select[name='options']").val();
+                                    var notes = encodeURIComponent(dialog.find(".detail").val());
+                                    var selectedOption = encodeURIComponent(dialog.find("select[name='options']").val());
                                     var combinedNotes = "";
-                                    if ( selectedOption && selectedOption != "0" ) {
+                                    if ( selectedOption) {
                                             combinedNotes = options[selectedOption];
                                     }
-                                    if ( selectedOption && selectedOption != "0" && notes ) {
-                                            combinedNotes += ": ";
+                                    if ( selectedOption && notes ) {
+                                            combinedNotes += "%3A%20";
                                     }
                                     if ( notes ) {
                                             combinedNotes += notes;
