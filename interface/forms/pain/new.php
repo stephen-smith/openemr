@@ -1,6 +1,6 @@
 <?php
 /* include globals.php, required. */
-require_once('../../globals.php');
+require_once(dirname(__FILE__) . '/../../globals.php');
 
 /* include api.inc. also required. */
 require_once($GLOBALS['srcdir'].'/api.inc');
