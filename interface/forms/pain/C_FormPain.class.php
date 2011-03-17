@@ -60,7 +60,7 @@ class C_FormPain extends C_AbstractClickmap {
      * @breif return a n arra containing the options for the dropdown box.
      */
     function getOptionList() {
-        return array(  "0"=> "None", "1" => "Low", "2"=> "Medium", "3" => "High", "4" => "Excurciating" );
+        return array(  "0" => "None", "1" => "Low", "2"=> "Medium", "3" => "High", "4" => "Excurciating" );
     }
 
     /**
